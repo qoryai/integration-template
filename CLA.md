@@ -79,5 +79,5 @@ nothing more.
 
 ## 8. Licence of the Project
 
-The Owner distributes the Project under the Apache License, Version 2.0 (see `LICENSE`).
+The Owner distributes the Project under MIT No Attribution (MIT-0; see `LICENSE`).
 Section 2 is what allows a future version to be distributed under another licence.

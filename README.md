@@ -42,7 +42,7 @@ programs Qory publishes
 | README | this file; a test checks the blocks under *5. Declare and use it* |
 | Changelog | `CHANGELOG.md`: start over with an `[Unreleased]` section; versions start at 0.1.0 |
 | Template's own files | `CLA.md`, `CONTRIBUTING.md`, `SECURITY.md`: delete or replace |
-| Licence | `LICENSE` is the template's (Apache 2.0). Keep its terms for code taken from the template; license your own code as you choose. |
+| Licence | `LICENSE`: replace it with your own. The template is MIT-0, so the code you take from it needs no notice and no credit. |
 
 Then run `go test ./...`. It passes when the rename is complete.
 
@@ -131,5 +131,6 @@ that adds your integration to the table.
 
 ## Licence
 
-Apache License 2.0; see [LICENSE](LICENSE). Contributions to the template itself:
+MIT No Attribution (MIT-0); see [LICENSE](LICENSE). Use the template's code for any
+purpose, with no notice and no credit. Contributions to the template itself:
 [CONTRIBUTING.md](CONTRIBUTING.md).

@@ -40,8 +40,9 @@ rather than a takeback.
 
 ## Licence
 
-By contributing, you agree that your contribution is licensed under the Apache License,
-Version 2.0 (see [LICENSE](LICENSE)) in addition to the CLA grant above.
+By contributing, you agree that your contribution is licensed under MIT No Attribution
+(MIT-0; see [LICENSE](LICENSE)) in addition to the CLA grant above. The template is
+copied into every integration started from it, so what it contains carries no condition.
 
 ## Development
 

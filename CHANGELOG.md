@@ -27,5 +27,7 @@ which starts over.
   every integration's releases follow.
 - The README, the guide from renaming the template to listing the integration in the
   catalog.
+- The licence, MIT No Attribution (MIT-0): an integration started from the template
+  owes it no notice and no credit, and is licensed as its author chooses.
 
 [Unreleased]: https://github.com/qoryai/integration-template/commits/main
