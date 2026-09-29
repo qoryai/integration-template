@@ -69,6 +69,8 @@ The credential role's answer is the runner's credential document
 ([§Credentials](https://github.com/qoryai/runner/tree/main/contracts/runner/v1#credentials)):
 the token, optionally when it expires, and the hosts, scheme and paths it applies to.
 
+More: [Writing an integration](https://github.com/qoryai/integrations/blob/main/docs/writing-an-integration.md).
+
 ## 4. Test
 
 ```sh
