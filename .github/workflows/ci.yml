@@ -1,0 +1,13 @@
+name: CI
+
+# The checks every Go integration runs, from qoryai/integrations: formatting, vet, tests,
+# build, and the doc comments against revive.toml.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  go:
+    uses: qoryai/integrations/.github/workflows/go.yml@main

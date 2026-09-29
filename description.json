@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "name": "example",
+  "title": "Example",
+  "description": "Hands a run the Example API's token for the project it works on, on that project's paths alone.",
+  "settings": {
+    "type": "object",
+    "additionalProperties": false,
+    "oneOf": [
+      {"required": ["token_file"]},
+      {"required": ["token"]}
+    ],
+    "properties": {
+      "token_file": {
+        "title": "Token file",
+        "description": "A file that contains the API token and that only its owner reads: how a machine hands the token in.",
+        "type": "string",
+        "minLength": 1
+      },
+      "token": {
+        "title": "Token",
+        "description": "The API token. Secret: written, never read back, and never on a command line.",
+        "type": "string",
+        "writeOnly": true,
+        "minLength": 1
+      }
+    }
+  },
+  "roles": {
+    "credential": {
+      "argument": "[a-z0-9][a-z0-9-]{0,62}",
+      "hosts": ["api.example.com"]
+    }
+  }
+}

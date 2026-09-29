@@ -1,0 +1,20 @@
+name: Release
+
+# Publishes a release of the program for a tag vX.Y.Z, by the rule every integration's
+# releases follow (qoryai/integrations, README §Release rule): the program built from
+# ./cmd/<program> for Linux and macOS, amd64 and arm64, checksums.txt, and the body of
+# CHANGELOG.md's section [X.Y.Z]. A tag without that section publishes nothing. It runs
+# on github.com alone.
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  release:
+    if: ${{ github.server_url == 'https://github.com' }}
+    permissions:
+      contents: write
+    uses: qoryai/integrations/.github/workflows/release.yml@main
+    with:
+      program: acme-example
