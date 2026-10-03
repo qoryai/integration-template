@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"slices"
 	"strings"
 	"sync"
@@ -74,30 +75,52 @@ var settingsSchema = sync.OnceValues(func() (*jsonschema.Schema, error) {
 })
 
 // Settings are what the credential role needs, the document the description's settings
-// schema declares, as a command line hands it in. The package keeps none of them: they
-// are handed in on every call.
+// schema declares, as the program reads it on standard input. The package keeps none of
+// them: they are handed in on every call.
 type Settings struct {
-	// TokenFile is a file that contains the API token.
+	// TokenFile is a file that contains the API token, the token kept on disk.
 	TokenFile string
+	// Token is the API token itself, the secret.
+	Token string
 }
 
-// ReadSettings reads the settings document passed on a command line. It refuses a
-// secret, a setting the schema marks writeOnly, before anything else, because a command
-// line is visible to the machine's other processes; then a document the schema refuses.
-// An error identifies a setting and what is wrong with it, never a value.
-func ReadSettings(arg string) (Settings, error) {
+// maxSettings is the most the settings may be, 64 KiB, as the integration contract
+// defines it.
+const maxSettings = 64 << 10
+
+// ReadSettings reads the settings document the program reads on standard input, the
+// one place its settings come from. It reads r to its end, or until it has more than
+// 64 KiB, before anything else, so a caller has read the settings before it acts. It
+// refuses more than 64 KiB, input with no document, and anything after the first
+// document but white space; then a secret <name> together with <name>_file, before the
+// schema does, and a document the schema refuses. Nothing in the document is replaced:
+// a $ in a value is a $. An error identifies a setting and what is wrong with it, never
+// a value or any other part of the input.
+func ReadSettings(r io.Reader) (Settings, error) {
+	b, err := io.ReadAll(io.LimitReader(r, maxSettings+1))
+	if err != nil {
+		return Settings{}, fmt.Errorf("reading the settings on standard input: %w", err)
+	}
+	if len(b) > maxSettings {
+		return Settings{}, fmt.Errorf("the settings on standard input are larger than 64 KiB, %d bytes", maxSettings)
+	}
 	schema, err := settingsSchema()
 	if err != nil {
 		return Settings{}, err
 	}
-	doc, err := jsonschema.UnmarshalJSON(strings.NewReader(arg))
+	raw, err := one(b)
 	if err != nil {
-		return Settings{}, fmt.Errorf("the settings are not one JSON document: %w", err)
+		return Settings{}, fmt.Errorf("the settings on standard input %w", err)
+	}
+	doc, err := jsonschema.UnmarshalJSON(bytes.NewReader(raw))
+	if err != nil {
+		return Settings{}, errors.New("the settings on standard input are not one JSON document")
 	}
 	if m, ok := doc.(map[string]any); ok {
 		for _, name := range secrets(schema) {
-			if _, ok := m[name]; ok {
-				return Settings{}, fmt.Errorf("the settings on the command line contain %s, a secret, which the machine's other processes see; set %s_file to a file that contains it instead", name, name)
+			_, secret := m[name]
+			if _, file := m[name+"_file"]; secret && file {
+				return Settings{}, fmt.Errorf("the settings contain both %s and %s_file; a secret has one source, so set one of them", name, name)
 			}
 		}
 	}
@@ -106,11 +129,36 @@ func ReadSettings(arg string) (Settings, error) {
 	}
 	var wire struct {
 		TokenFile string `json:"token_file"`
+		Token     string `json:"token"`
 	}
-	if err := json.Unmarshal([]byte(arg), &wire); err != nil {
+	if err := json.Unmarshal(raw, &wire); err != nil {
 		return Settings{}, fmt.Errorf("the settings: %w", err)
 	}
-	return Settings{TokenFile: wire.TokenFile}, nil
+	return Settings{TokenFile: wire.TokenFile, Token: wire.Token}, nil
+}
+
+// one is the JSON document b contains, which nothing but JSON's white space may
+// follow. Its error completes "the settings ... " and says where in b the document
+// breaks, never what b contains there.
+func one(b []byte) (json.RawMessage, error) {
+	dec := json.NewDecoder(bytes.NewReader(b))
+	var raw json.RawMessage
+	err := dec.Decode(&raw)
+	var syntax *json.SyntaxError
+	switch {
+	case errors.Is(err, io.EOF):
+		return nil, errors.New("are empty")
+	case errors.Is(err, io.ErrUnexpectedEOF):
+		return nil, errors.New("are not one JSON document: it ends before the document does")
+	case errors.As(err, &syntax):
+		return nil, fmt.Errorf("are not one JSON document: it breaks at byte %d", syntax.Offset)
+	case err != nil:
+		return nil, errors.New("are not one JSON document")
+	}
+	if strings.Trim(string(b[dec.InputOffset():]), " \t\r\n") != "" {
+		return nil, errors.New("are not one JSON document: something other than white space follows it")
+	}
+	return raw, nil
 }
 
 // secrets are the settings the schema marks writeOnly.

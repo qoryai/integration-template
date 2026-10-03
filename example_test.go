@@ -56,30 +56,113 @@ func TestTheDescriptionMarksTheTokenAloneASecret(t *testing.T) {
 }
 
 func TestReadSettings(t *testing.T) {
-	s, err := ReadSettings(`{"token_file":"/t"}`)
-	if err != nil || s.TokenFile != "/t" {
+	s, err := ReadSettings(strings.NewReader(`{"token_file":"/t"}`))
+	if err != nil || s.TokenFile != "/t" || s.Token != "" {
 		t.Errorf("settings %+v, %v", s, err)
+	}
+	s, err = ReadSettings(strings.NewReader(`{"token":"` + token + `"}`))
+	if err != nil || s.Token != token || s.TokenFile != "" {
+		t.Errorf("settings %+v, %v", s, err)
+	}
+}
+
+// TestReadSettingsReadsOneDocumentOfAtMost64KiB reads the settings as the program reads
+// them on standard input: one document, with white space around it, up to 64 KiB of
+// input, and nothing in it replaced, a $ among it, whatever the environment contains.
+func TestReadSettingsReadsOneDocumentOfAtMost64KiB(t *testing.T) {
+	t.Setenv("TOKEN_FILE", "/from/the/environment")
+	t.Setenv("EXAMPLE_TOKEN", "from-the-environment")
+	doc := `{"token_file":"/t"}`
+	for _, in := range []string{
+		doc,
+		doc + "\n",
+		" \t\r\n" + doc + " \t\r\n",
+		doc + strings.Repeat(" ", maxSettings-len(doc)),
+	} {
+		s, err := ReadSettings(strings.NewReader(in))
+		if err != nil || s.TokenFile != "/t" {
+			t.Errorf("%d bytes: settings %+v, %v", len(in), s, err)
+		}
+	}
+	for in, want := range map[string]Settings{
+		`{"token_file":"$TOKEN_FILE"}`:   {TokenFile: "$TOKEN_FILE"},
+		`{"token_file":"${TOKEN_FILE}"}`: {TokenFile: "${TOKEN_FILE}"},
+		`{"token":"$EXAMPLE_TOKEN"}`:     {Token: "$EXAMPLE_TOKEN"},
+		`{"token":"` + token + `$"}`:     {Token: token + "$"},
+	} {
+		s, err := ReadSettings(strings.NewReader(in))
+		if err != nil || s != want {
+			t.Errorf("%s: settings %+v, %v", in, s, err)
+		}
+	}
+}
+
+// TestReadSettingsRefusesInputAndNeverSaysAValue refuses input that is not one settings
+// document of 64 KiB at most, and the token beside its file, with an error that contains
+// no part of the input.
+func TestReadSettingsRefusesInputAndNeverSaysAValue(t *testing.T) {
+	doc := `{"token":"` + token + `"}`
+	for _, tc := range []struct{ name, in, want string }{
+		{"empty", "", "the settings on standard input are empty"},
+		{"white space", " \t\r\n ", "the settings on standard input are empty"},
+		{"two documents", doc + ` {"token":"` + token + `"}`, "something other than white space follows it"},
+		{"something after", doc + token, "something other than white space follows it"},
+		{"a white space JSON has not", doc + "\v", "something other than white space follows it"},
+		{"cut short", `{"token":"` + token + `"`, "it ends before the document does"},
+		{"a token not quoted", `{"token":` + token + `}`, "it breaks at byte 10"},
+		{"larger than 64 KiB", doc + strings.Repeat(" ", maxSettings+1-len(doc)), "larger than 64 KiB, 65536 bytes"},
+		{"the token and its file", `{"token_file":"/t","token":"` + token + `"}`, "the settings contain both token and token_file; a secret has one source"},
+	} {
+		_, err := ReadSettings(strings.NewReader(tc.in))
+		if err == nil || !strings.Contains(err.Error(), tc.want) {
+			t.Errorf("%s: %v", tc.name, err)
+			continue
+		}
+		if strings.Contains(err.Error(), token) || strings.Contains(err.Error(), "/t\"") || strings.Contains(err.Error(), "\n") {
+			t.Errorf("%s: the error contains a value or a newline: %v", tc.name, err)
+		}
 	}
 }
 
 func TestReadSettingsRefusesWhatTheSchemaRefusesAndNeverSaysAValue(t *testing.T) {
 	for _, tc := range []struct{ doc, want string }{
-		{`{"token":"` + token + `"}`, "contain token, a secret"},
-		{`{"token_file":"/t","token":"` + token + `"}`, "contain token, a secret"},
 		{`{}`, "missing property 'token_file', or missing property 'token'"},
 		{`{"token_file":""}`, "/token_file: minLength"},
+		{`{"token":""}`, "/token: minLength"},
 		{`{"token_file":true}`, "/token_file: got boolean, want string"},
 		{`{"token_file":"/t","tokn":"` + token + `"}`, "additional properties 'tokn' not allowed"},
 		{`["token_file"]`, "got array, want object"},
-		{`{"token_file":"/t"} {}`, "not one JSON document"},
 	} {
-		_, err := ReadSettings(tc.doc)
+		_, err := ReadSettings(strings.NewReader(tc.doc))
 		if err == nil || !strings.Contains(err.Error(), tc.want) {
 			t.Errorf("%s: %v", tc.doc, err)
 			continue
 		}
 		if strings.Contains(err.Error(), token) || strings.Contains(err.Error(), "\n") {
 			t.Errorf("%s: the error contains a value or a newline: %v", tc.doc, err)
+		}
+	}
+}
+
+// TestTheTokenInTheSettingsIsCheckedAsAFileIs pins that the token the settings contain
+// passes the checks a token file's content does, nothing trimmed from it, and that the
+// error never says what else it contains.
+func TestTheTokenInTheSettingsIsCheckedAsAFileIs(t *testing.T) {
+	if err := CheckToken(token); err != nil {
+		t.Errorf("%q: %v", token, err)
+	}
+	for in, want := range map[string]string{
+		"":               "the token in the settings is empty",
+		token + "\n":     "the token in the settings contains white space",
+		" " + token:      "the token in the settings contains white space",
+		token + "\t":     "the token in the settings contains white space",
+		token + "\x00":   "the token in the settings contains white space, a control character",
+		token + "\x7f":   "the token in the settings contains white space, a control character",
+		token + "\u00e9": "the token in the settings contains white space, a control character or a byte that is not ASCII",
+	} {
+		err := CheckToken(in)
+		if err == nil || !strings.Contains(err.Error(), want) || strings.Contains(err.Error(), token) {
+			t.Errorf("%q: %v, want %q", in, err, want)
 		}
 	}
 }
@@ -97,7 +180,7 @@ func TestTheArgumentPatternIsTheParser(t *testing.T) {
 		strings.Repeat("a", 64):   false,
 		"":                        false,
 		"-my-project":             false,
-		"--settings":              false,
+		"--token":                 false,
 		"My-Project":              false,
 		"my_project":              false,
 		"my.project":              false,
@@ -205,13 +288,13 @@ func TestATokenFileWithMoreThanTheTokenIsRefused(t *testing.T) {
 	for content, want := range map[string]string{
 		"":                      "is empty",
 		"\n":                    "is empty",
-		token + "\n\n":          "more than the token",
-		token + "\r\n":          "more than the token",
-		token + "\nsecond-line": "more than the token",
-		" " + token:             "more than the token",
-		token + "\t":            "more than the token",
-		token + "\x00":          "more than the token",
-		token + "\u00e9":        "more than the token",
+		token + "\n\n":          "contains white space",
+		token + "\r\n":          "contains white space",
+		token + "\nsecond-line": "contains white space",
+		" " + token:             "contains white space",
+		token + "\t":            "contains white space",
+		token + "\x00":          "contains white space",
+		token + "\u00e9":        "contains white space",
 	} {
 		_, err := ReadTokenFile(tokenFile(t, content, 0o600))
 		if err == nil || !strings.Contains(err.Error(), want) || strings.Contains(err.Error(), token) {
