@@ -74,15 +74,35 @@ func ReadTokenFile(path string) (string, error) {
 		return "", fmt.Errorf("the token file %s is larger than a token", path)
 	}
 	token := strings.TrimSuffix(string(b), "\n")
+	if err := checkToken(token); err != nil {
+		return "", fmt.Errorf("the token in the file %s %w", path, err)
+	}
+	return token, nil
+}
+
+// CheckToken checks the API token the settings contain, token, as [ReadTokenFile]
+// checks a file's content: an empty token, and one with white space or a control
+// character in it, which no header carries, are refused. Nothing is trimmed from it. An
+// error says what is wrong with the token, never the token.
+func CheckToken(token string) error {
+	if err := checkToken(token); err != nil {
+		return fmt.Errorf("the token in the settings %w", err)
+	}
+	return nil
+}
+
+// checkToken refuses a token no header carries. Its error completes "the token ... "
+// and never contains the token.
+func checkToken(token string) error {
 	if token == "" {
-		return "", fmt.Errorf("the token file %s is empty", path)
+		return errors.New("is empty")
 	}
 	for _, c := range []byte(token) {
 		if c <= ' ' || c >= 0x7f {
-			return "", fmt.Errorf("the token file %s contains more than the token: white space, a control character or a byte that is not ASCII", path)
+			return errors.New("contains white space, a control character or a byte that is not ASCII, which no header carries")
 		}
 	}
-	return token, nil
+	return nil
 }
 
 // Answer is the credential adapter's answer, the runner's credential.schema.json,
