@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"syscall"
 	"testing"
@@ -42,7 +43,8 @@ func TestTheDescriptionMarksTheTokenAloneASecret(t *testing.T) {
 	}
 	var s struct {
 		Properties map[string]struct {
-			WriteOnly bool `json:"writeOnly"`
+			WriteOnly  bool   `json:"writeOnly"`
+			SecretName string `json:"x-secret-name"`
 		} `json:"properties"`
 	}
 	if err := json.Unmarshal(d.Settings, &s); err != nil {
@@ -52,6 +54,11 @@ func TestTheDescriptionMarksTheTokenAloneASecret(t *testing.T) {
 		if p.WriteOnly != (name == "token") {
 			t.Errorf("%s writeOnly is %v", name, p.WriteOnly)
 		}
+	}
+	// The name a control plane suggests for storing the token is not the placeholder the
+	// run sees: the program never sees the one, and the agent the other.
+	if got := s.Properties["token"].SecretName; got != "EXAMPLE_API_TOKEN" || slices.Contains(Placeholders, got) {
+		t.Errorf("token x-secret-name is %q", got)
 	}
 }
 

@@ -22,6 +22,7 @@
         "description": "The API token itself, inline in the settings. Secret: written, never read back. Set this or token_file, never both.",
         "type": "string",
         "writeOnly": true,
+        "x-secret-name": "EXAMPLE_API_TOKEN",
         "minLength": 1
       }
     }

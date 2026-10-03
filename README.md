@@ -70,7 +70,9 @@ Rules every program follows
   standard error that says what failed. Never print a secret.
 - A secret is a top-level setting marked `writeOnly`. It comes inline as `<name>`, or as
   `<name>_file`, a file only the program's user reads, never both: refuse settings that
-  contain the two.
+  contain the two. It may carry `x-secret-name`, the name a control plane suggests for
+  storing it, such as the example's `EXAMPLE_API_TOKEN`; the program never sees that
+  name.
 
 To run the example's role by hand:
 

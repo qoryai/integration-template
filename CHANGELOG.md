@@ -29,7 +29,9 @@ which starts over.
 - The settings hand in the token inline, `token`, or as `token_file`, a file only its
   owner reads, never both: settings with the two are refused, by name, never by value.
   The token is checked the same way from either: not empty, and no white space, control
-  character or byte that is not ASCII.
+  character or byte that is not ASCII. The description's `token` carries
+  `x-secret-name`, `EXAMPLE_API_TOKEN`: the name a control plane suggests for storing
+  it, distinct from the placeholder `EXAMPLE_TOKEN` a run sees.
 - The tests, which hand what the program prints to the `conformance` package of
   `github.com/qoryai/integrations`: the description, the answer, and each failure, the
   refused `--settings` among them. They pin qoryai/integrations at main's commit 0970afb,
