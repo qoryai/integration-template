@@ -1,7 +1,9 @@
 package example
 
 import (
+	"bytes"
 	"encoding/json"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -41,7 +43,20 @@ func TestTheDescriptionMarksTheTokenAloneASecret(t *testing.T) {
 	if d.Domains != nil {
 		t.Errorf("domains %v; none is every domain", d.Domains)
 	}
+	if d.Publisher != (Publisher{Name: "Example", URL: "https://example.com"}) {
+		t.Errorf("publisher %+v", d.Publisher)
+	}
+	// The credential role lists what the runner hands it, the token as token or
+	// token_file, and requires it.
+	if got := d.Roles.Credential.Settings; !slices.Equal(got, []string{"token"}) {
+		t.Errorf("the credential role's settings are %v", got)
+	}
+	if got := d.Roles.Credential.Required; !slices.Equal(got, []string{"token"}) {
+		t.Errorf("the credential role requires %v", got)
+	}
 	var s struct {
+		OneOf      any `json:"oneOf"`
+		Required   any `json:"required"`
 		Properties map[string]struct {
 			WriteOnly  bool   `json:"writeOnly"`
 			SecretName string `json:"x-secret-name"`
@@ -49,6 +64,11 @@ func TestTheDescriptionMarksTheTokenAloneASecret(t *testing.T) {
 	}
 	if err := json.Unmarshal(d.Settings, &s); err != nil {
 		t.Fatal(err)
+	}
+	// The settings' top level requires nothing: each role's document holds a subset of
+	// the settings, and the role's required says what it needs.
+	if s.OneOf != nil || s.Required != nil {
+		t.Errorf("the settings' top level has oneOf %v and required %v", s.OneOf, s.Required)
 	}
 	for name, p := range s.Properties {
 		if p.WriteOnly != (name == "token") {
@@ -133,7 +153,6 @@ func TestReadSettingsRefusesInputAndNeverSaysAValue(t *testing.T) {
 
 func TestReadSettingsRefusesWhatTheSchemaRefusesAndNeverSaysAValue(t *testing.T) {
 	for _, tc := range []struct{ doc, want string }{
-		{`{}`, "missing property 'token_file', or missing property 'token'"},
 		{`{"token_file":""}`, "/token_file: minLength"},
 		{`{"token":""}`, "/token: minLength"},
 		{`{"token_file":true}`, "/token_file: got boolean, want string"},
@@ -147,6 +166,45 @@ func TestReadSettingsRefusesWhatTheSchemaRefusesAndNeverSaysAValue(t *testing.T)
 		}
 		if strings.Contains(err.Error(), token) || strings.Contains(err.Error(), "\n") {
 			t.Errorf("%s: the error contains a value or a newline: %v", tc.doc, err)
+		}
+	}
+}
+
+// TestReadSettingsTakesWhatTheCredentialRoleRequires reads the credential role's
+// required as the integration contract does, the settings' schema requiring nothing at
+// its top level: the token as token or as token_file, one of them and never both.
+// Neither and both are refused, before the schema and with no value in the error.
+func TestReadSettingsTakesWhatTheCredentialRoleRequires(t *testing.T) {
+	for doc, want := range map[string]Settings{
+		`{"token":"` + token + `"}`: {Token: token},
+		`{"token_file":"/t"}`:       {TokenFile: "/t"},
+	} {
+		if s, err := ReadSettings(strings.NewReader(doc)); err != nil || s != want {
+			t.Errorf("%s: settings %+v, %v", doc, s, err)
+		}
+	}
+	for _, tc := range []struct{ doc, want string }{
+		{`{}`, "the settings contain neither token nor token_file; the credential role requires the secret, so set one of them"},
+		{`{"tokn":"` + token + `"}`, "the settings contain neither token nor token_file; the credential role requires the secret, so set one of them"},
+		{`{"token_file":"/t","token":"` + token + `"}`, "the settings contain both token and token_file; a secret has one source, so set one of them"},
+	} {
+		_, err := ReadSettings(strings.NewReader(tc.doc))
+		if err == nil || err.Error() != tc.want {
+			t.Errorf("%s: %v, want %s", tc.doc, err, tc.want)
+		}
+	}
+	// Every setting the role requires is refused when it alone is missing, a secret when
+	// neither of its forms is there.
+	full := map[string]any{"token": token}
+	for _, name := range Describe("").Roles.Credential.Required {
+		doc := maps.Clone(full)
+		delete(doc, name)
+		b, err := json.Marshal(doc)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := ReadSettings(bytes.NewReader(b)); err == nil || !strings.Contains(err.Error(), name) || !strings.Contains(err.Error(), "the credential role requires") {
+			t.Errorf("without %s: %v", name, err)
 		}
 	}
 }

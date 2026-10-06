@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime/debug"
 	"strings"
@@ -81,6 +82,49 @@ func TestDescribeConforms(t *testing.T) {
 	}
 	if out.String() != string(want)+"\n" || !strings.Contains(out.String(), `"program_version": "1.2.3"`) {
 		t.Errorf("describe prints\n%s", out.String())
+	}
+}
+
+// TestTheReleaseCheckPassesTheBuiltProgram makes the check qoryai/integrations' release
+// workflow makes before it publishes: it builds the program as a release does, its
+// version set with ldflags, and runs cmd/integration-conformance, built from the version
+// of qoryai/integrations go.mod requires, on what describe prints. A description the
+// contract refuses, or a go.mod that requires a version without the check, fails here
+// before a release would. It needs the go command; -short skips it.
+func TestTheReleaseCheckPassesTheBuiltProgram(t *testing.T) {
+	if testing.Short() {
+		t.Skip("builds two programs")
+	}
+	gocmd, err := exec.LookPath("go")
+	if err != nil {
+		t.Skip("the go command is not on the PATH")
+	}
+	dir := t.TempDir()
+	prog, check := filepath.Join(dir, program), filepath.Join(dir, "integration-conformance")
+	for _, args := range [][]string{
+		{"build", "-trimpath", "-ldflags", "-s -w -X main.version=1.2.3", "-o", prog, "."},
+		{"build", "-o", check, "github.com/qoryai/integrations/cmd/integration-conformance"},
+	} {
+		cmd := exec.Command(gocmd, args...)
+		cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("go %s: %v\n%s", strings.Join(args, " "), err, out)
+		}
+	}
+	desc, err := exec.Command(prog, "describe").Output()
+	if err != nil {
+		t.Fatalf("%s describe: %v", program, err)
+	}
+	var d struct {
+		ProgramVersion string `json:"program_version"`
+	}
+	if err := json.Unmarshal(desc, &d); err != nil || d.ProgramVersion != "1.2.3" {
+		t.Errorf("describe reports program_version %q, %v; the build set 1.2.3", d.ProgramVersion, err)
+	}
+	cmd := exec.Command(check)
+	cmd.Stdin = bytes.NewReader(desc)
+	if out, err := cmd.CombinedOutput(); err != nil || len(out) != 0 {
+		t.Errorf("integration-conformance: %v\n%s\n%s", err, out, desc)
 	}
 }
 
@@ -211,7 +255,7 @@ func TestEveryFailureConformsAndCarriesNoToken(t *testing.T) {
 		{"two documents on standard input", cred, with(own) + "\n" + with(own), "something other than white space follows it"},
 		{"something after the document", cred, inline(token) + token, "something other than white space follows it"},
 		{"more than 64 KiB on standard input", cred, with(own) + strings.Repeat(" ", 65537-len(with(own))), "larger than 64 KiB, 65536 bytes"},
-		{"no token", cred, "{}", "missing property 'token_file', or missing property 'token'"},
+		{"no token", cred, "{}", "contain neither token nor token_file; the credential role requires the secret"},
 		{"the token beside its file", cred, settings(t, map[string]any{"token_file": own, "token": token}), "contain both token and token_file; a secret has one source"},
 		{"a setting it does not know", cred, settings(t, map[string]any{"token_file": own, "api_token": token}), "additional properties 'api_token' not allowed"},
 		{"a token with white space", cred, inline(token + " " + token), "the token in the settings contains white space"},

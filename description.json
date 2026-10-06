@@ -2,14 +2,11 @@
   "version": 1,
   "name": "example",
   "title": "Example",
+  "publisher": {"name": "Example", "url": "https://example.com"},
   "description": "Hands a run the Example API's token for the project it works on, on that project's paths alone.",
   "settings": {
     "type": "object",
     "additionalProperties": false,
-    "oneOf": [
-      {"required": ["token_file"]},
-      {"required": ["token"]}
-    ],
     "properties": {
       "token_file": {
         "title": "Token file",
@@ -30,7 +27,9 @@
   "roles": {
     "credential": {
       "argument": "[a-z0-9][a-z0-9-]{0,62}",
-      "hosts": ["api.example.com"]
+      "hosts": ["api.example.com"],
+      "settings": ["token"],
+      "required": ["token"]
     }
   }
 }
