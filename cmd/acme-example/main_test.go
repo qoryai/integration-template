@@ -90,7 +90,9 @@ func TestDescribeConforms(t *testing.T) {
 // version set with ldflags, and runs cmd/integration-conformance, built from the version
 // of qoryai/integrations go.mod requires, on what describe prints. A description the
 // contract refuses, or a go.mod that requires a version without the check, fails here
-// before a release would. It needs the go command; -short skips it.
+// before a release would. It also checks that describe prints the same bytes at every
+// run, as a release's description.json and its SHA-256 require. It needs the go
+// command; -short skips it.
 func TestTheReleaseCheckPassesTheBuiltProgram(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds two programs")
@@ -114,6 +116,20 @@ func TestTheReleaseCheckPassesTheBuiltProgram(t *testing.T) {
 	desc, err := exec.Command(prog, "describe").Output()
 	if err != nil {
 		t.Fatalf("%s describe: %v", program, err)
+	}
+	// qory checks describe against the release's description.json, and the runner against
+	// its SHA-256, byte for byte: the program prints the same bytes at every run, and the
+	// release's build prints what the program's own code does.
+	again, err := exec.Command(prog, "describe").Output()
+	if err != nil || !bytes.Equal(again, desc) {
+		t.Errorf("%s describe printed other bytes the second time, %v:\n%s\n%s", program, err, desc, again)
+	}
+	want, err := json.MarshalIndent(example.Describe("1.2.3"), "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(desc, append(want, '\n')) {
+		t.Errorf("the release's build describes\n%s\nthe code\n%s", desc, want)
 	}
 	var d struct {
 		ProgramVersion string `json:"program_version"`
@@ -307,19 +323,20 @@ func TestUsage(t *testing.T) {
 }
 
 // TestProgramVersionFallsBackToTheModuleVersion pins the program's version: the one set
-// with ldflags first, then the module version go install records, a release or a
-// pseudo-version, which the contract accepts, and "dev" for a build whose module version
-// is (devel) or empty, or with no build info.
+// with ldflags first, then the module version go install records without its v, a
+// release's X.Y.Z, as the release workflow sets it from the tag and a run's connection
+// names it, or a pseudo-version, which the contract accepts, and "dev" for a build whose
+// module version is (devel) or empty, or with no build info.
 func TestProgramVersionFallsBackToTheModuleVersion(t *testing.T) {
-	pseudo := "v0.0.0-20260926201317-44236bb3bdba"
+	pseudo := "0.0.0-20260926201317-44236bb3bdba"
 	for _, tc := range []struct {
 		ldflags, module string
 		info            bool
 		want            string
 	}{
 		{"1.2.3", "v0.1.0", true, "1.2.3"},
-		{"", "v0.1.0", true, "v0.1.0"},
-		{"", pseudo, true, pseudo},
+		{"", "v0.1.0", true, "0.1.0"},
+		{"", "v" + pseudo, true, pseudo},
 		{"", "(devel)", true, "dev"},
 		{"", "", true, "dev"},
 		{"", "", false, "dev"},

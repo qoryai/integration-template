@@ -14,7 +14,12 @@ which starts over.
 - The example integration, `example`, and its program, `acme-example`, built from
   `cmd/acme-example/`. `acme-example describe` prints the integration's description,
   contracts/integration/v1 of qoryai/integrations, with the program's version filled in;
-  it serves every domain, since it has no `domains`, and reads no standard input.
+  it serves every domain, since it has no `domains`, and reads no standard input. It
+  prints the same bytes at every run, as `qory` and the runner check them against the
+  release's `description.json`. The version is the one the release sets from its tag,
+  `X.Y.Z`, or for a program built with `go install`, the module's version without its
+  `v`, such as `0.1.0` for `@v0.1.0`, as a run's connection names it; `dev` for a build
+  without one.
   `acme-example credential -- <project>` plays the runner's credential adapter: it takes
   a static API token, and answers with the token applied to `api.example.com`, bearer,
   on `/v1/projects/<project>` and what is under it, and the placeholder `EXAMPLE_TOKEN`.
