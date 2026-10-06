@@ -62,7 +62,8 @@ which starts over.
   `@v0.2.0`: its checks on every push to `main` and `next` and on every pull request,
   and on a tag `vX.Y.Z` a release by the rule every integration's releases follow.
 - The README, the guide from renaming the template to listing the integration in the
-  catalog.
+  catalog. Its step *Declare and use it* shows the program listed by `path` and a run's
+  connection to it, and leaves the rest to qory's run guide.
 - The licence, MIT No Attribution (MIT-0): an integration started from the template
   owes it no notice and no credit, and is licensed as its author chooses.
 

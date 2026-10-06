@@ -360,40 +360,75 @@ func TestProgramVersionFallsBackToTheModuleVersion(t *testing.T) {
 	}
 }
 
-// declaration is what the README shows under "5. Declare and use it": the integration as a machine's
-// runner.yaml declares it, with its program and settings, and a run's policy that allows
-// its host and selects the credential qory expands the declaration into.
-func declaration() (integrations, settings, policy string) {
+// declaration is what the README shows under "5. Declare and use it", built from the
+// description: the command that installs the program, and the runner.yaml that lists it
+// by path under the integration's name, connects a run to its credential role with the
+// argument my-project, and links the role's secret, by its x-secret-name, to a value of
+// the machine bounded to the role's hosts. secret is the setting the runner writes that
+// value to.
+func declaration(t *testing.T) (install, runnerYAML, secret string) {
+	t.Helper()
 	d := example.Describe(version)
-	settings = `{"token_file":"/home/dev/.config/acme-example/token"}`
-	integrations = "integrations:\n" +
+	var schema struct {
+		Properties map[string]struct {
+			WriteOnly  bool   `json:"writeOnly"`
+			SecretName string `json:"x-secret-name"`
+		} `json:"properties"`
+	}
+	if err := json.Unmarshal(d.Settings, &schema); err != nil {
+		t.Fatal(err)
+	}
+	var secretName string
+	for _, name := range d.Roles.Credential.Settings {
+		if p := schema.Properties[name]; p.WriteOnly {
+			if secret != "" {
+				t.Fatalf("the credential role lists two secrets, %s and %s", secret, name)
+			}
+			secret, secretName = name, p.SecretName
+		}
+	}
+	if secret == "" || secretName == "" {
+		t.Fatalf("the credential role lists no secret with an x-secret-name: %q %q", secret, secretName)
+	}
+	install = "go install <module>/cmd/" + program + "@latest    # to /home/dev/go/bin/" + program + "\n"
+	runnerYAML = "# ~/.config/qory/runner.yaml\n" +
+		"integrations:\n" +
 		"  " + d.Name + ":\n" +
-		"    program: " + program + "\n" +
-		"    settings: " + settings + "\n"
-	policy = "egress:\n" +
-		"  mode: enforce\n" +
-		"  allow: [" + strings.Join(d.Roles.Credential.Hosts, ", ") + "]\n" +
-		"credentials:\n" +
-		"  - {name: " + d.Name + ", argument: my-project}\n"
-	return integrations, settings, policy
+		"    path: /home/dev/go/bin/" + program + "\n" +
+		"connections:\n" +
+		"  - kind: integration\n" +
+		"    id: " + d.Name + "\n" +
+		"    name: " + d.Name + "\n" +
+		"    ways: [credential]\n" +
+		"    argument: my-project\n" +
+		"    secrets: {" + secret + ": {source: external, name: " + secretName + "}}\n" +
+		"secrets:\n" +
+		"  local:\n" +
+		"    " + secretName + ":\n" +
+		"      env: " + secretName + "\n" +
+		"      hosts: [" + strings.Join(d.Roles.Credential.Hosts, ", ") + "]\n"
+	return install, runnerYAML, secret
 }
 
-// TestTheReadmeDeclaresWhatTheProgramAccepts pins the README's declaration and policy to
-// the program: its name, the integration's name and host, settings the program reads,
-// and an argument the credential role's pattern matches.
+// TestTheReadmeDeclaresWhatTheProgramAccepts pins the README's declaration to the
+// program and its description: the program's name and path, the integration's name as
+// the entry's key and the connection's name, the credential role, the secret the role
+// lists and its x-secret-name, and the role's hosts. The settings document the runner
+// writes from that connection, the secret inline, is one ReadSettings accepts, and the
+// argument is one the credential role's pattern matches.
 func TestTheReadmeDeclaresWhatTheProgramAccepts(t *testing.T) {
 	readme, err := os.ReadFile("../../README.md")
 	if err != nil {
 		t.Fatal(err)
 	}
-	integrations, settings, policy := declaration()
-	for _, block := range []string{integrations, policy} {
-		if !bytes.Contains(readme, []byte("```yaml\n"+block+"```")) {
+	install, runnerYAML, secret := declaration(t)
+	for _, block := range []string{"```sh\n" + install + "```", "```yaml\n" + runnerYAML + "```"} {
+		if !bytes.Contains(readme, []byte(block)) {
 			t.Errorf("README.md does not show\n%s", block)
 		}
 	}
-	if s, err := example.ReadSettings(strings.NewReader(settings)); err != nil || s.TokenFile == "" {
-		t.Errorf("the README's settings: %+v, %v", s, err)
+	if s, err := example.ReadSettings(strings.NewReader(settings(t, map[string]any{secret: token}))); err != nil || s.Token != token {
+		t.Errorf("the settings the README's connection gives, %s inline: the token read %t, %v", secret, s.Token == token, err)
 	}
 	if _, err := example.ParseProject("my-project"); err != nil {
 		t.Errorf("the README's argument: %v", err)

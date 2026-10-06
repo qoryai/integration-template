@@ -140,29 +140,45 @@ secrets. CI also runs `gofmt`, `go vet`, `go build` and
 
 ## 5. Declare and use it
 
-Install the program on the machine that runs `qory run`, on its `PATH`, from a release
-archive or with `go install <module>/cmd/<program>@latest`. Put the token in a file with
-mode 0600.
+On the machine that runs `qory run`, list the program in `~/.config/qory/runner.yaml`
+under the description's `name`, `example`. A program of your own with no release is
+listed by its absolute `path` alone. A run uses it through a connection that names the
+integration, the role and the argument, and links the secret `token` to a value of this
+machine:
 
-Declare it in `~/.config/qory/runner.yaml`. The program is not named `qory-<key>`, so
-`program:` is required:
+```sh
+go install <module>/cmd/acme-example@latest    # to /home/dev/go/bin/acme-example
+```
 
 ```yaml
+# ~/.config/qory/runner.yaml
 integrations:
   example:
-    program: acme-example
-    settings: {"token_file":"/home/dev/.config/acme-example/token"}
+    path: /home/dev/go/bin/acme-example
+connections:
+  - kind: integration
+    id: example
+    name: example
+    ways: [credential]
+    argument: my-project
+    secrets: {token: {source: external, name: EXAMPLE_API_TOKEN}}
+secrets:
+  local:
+    EXAMPLE_API_TOKEN:
+      env: EXAMPLE_API_TOKEN
+      hosts: [api.example.com]
 ```
 
-Select the credential in a run's policy:
+The run needs a wall, and its policy must let it reach `api.example.com`. With
+`EXAMPLE_API_TOKEN` in its environment, `qory run` starts
+`acme-example credential -- my-project` outside the wall, with the token on standard
+input.
 
-```yaml
-egress:
-  mode: enforce
-  allow: [api.example.com]
-credentials:
-  - {name: example, argument: my-project}
-```
+A release that publishes `description.json` ([6. Release](#6-release)) is installed with
+`qory integration install github.com/<owner>/<repo>`, which writes the entry's `path`,
+`source` and `description_sha256` itself. Everything else, from a server's connections
+to the checks at a run's start, is in qory's
+[run guide](https://github.com/qoryai/qory/blob/main/docs/run.md#integrations).
 
 ## 6. Release
 
@@ -172,6 +188,11 @@ credentials:
 `release.yml` builds the program for Linux and macOS, amd64 and arm64, and publishes
 `<program>_X.Y.Z_<os>_<arch>.tar.gz` and `checksums.txt`, with the changelog section as
 the release notes. A tag without a changelog section fails.
+
+`qory integration install` also needs the release's `description.json`, which the shared
+workflow publishes from the release of qoryai/integrations after v0.2.0. Until
+`release.yml` calls that release, list the program by `path`, as in
+[5. Declare and use it](#5-declare-and-use-it).
 
 ## 7. List it
 
