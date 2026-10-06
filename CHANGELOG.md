@@ -49,9 +49,10 @@ which starts over.
   refused `--settings` among them. One builds the program as a release does and runs
   `cmd/integration-conformance` on what its `describe` prints, the check the release
   workflow on qoryai/integrations' `next` makes before it publishes; `go test -short`
-  skips it. They pin qoryai/integrations at a commit on its `next`, 76ba950,
-  `v0.2.1-0.20261006205431-76ba950eb383`, the contract with the publisher, each role's
-  `settings` and `required`, and `cmd/integration-conformance`, until its next tag.
+  skips it. They pin qoryai/integrations at a commit on its `next`, 86b8e85,
+  `v0.2.1-0.20261006215253-86b8e85f952d`, the contract with the publisher, each role's
+  `settings` and `required`, `cmd/integration-conformance`, and `conformance.Credential`
+  refusing an `apply` header the runner reserves, until its next tag.
 - `ci.yml` and `release.yml`, which call the workflows of qoryai/integrations at
   `@v0.2.0`: its checks on every push to `main` and `next` and on every pull request,
   and on a tag `vX.Y.Z` a release by the rule every integration's releases follow.

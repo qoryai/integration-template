@@ -117,7 +117,9 @@ The tests run the program and check its output with
 
 - `conformance.Description`: `describe` output against the contract's schema and the
   rules beyond it, the secrets and each role's `settings` and `required` among them.
-- `conformance.Credential`: the credential answer against the runner's schema.
+- `conformance.Credential`: the credential answer against the runner's schema, and
+  each `apply` entry of the scheme `header` against the headers the runner reserves,
+  such as `Authorization` and `Cookie`.
 - `conformance.Failure`: exit status and output of every failure, the refused
   `credential --settings '{}' -- my-project` among them.
 
