@@ -57,12 +57,7 @@ Rules every program follows
 ([integration contract](https://github.com/qoryai/integrations/tree/main/contracts/integration/v1)):
 
 - `describe` prints one JSON document, takes no settings, reads no standard input and
-  makes no network call. It prints the same bytes at every run and on every platform:
-  `qory` and the runner check them against the release's `description.json`, byte for
-  byte and by its SHA-256.
-- The description's `name` is the key a machine's runner file lists the integration
-  under, and the name a run's connection uses. Its `program_version` is the release's
-  version, `X.Y.Z`, the tag without its `v`, which a run's connection names.
+  makes no network call.
 - The description names its `publisher`: who publishes the program, as you name
   yourself, and an `https://` URL, which may be absent.
 - A role is started as `<program> <role> -- <argument>`. `--` is always there and ends
