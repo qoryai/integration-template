@@ -14,29 +14,14 @@ which starts over.
 - The example integration, `example`, and its program, `acme-example`, built from
   `cmd/acme-example/`. `acme-example describe` prints the integration's description,
   contracts/integration/v1 of qoryai/integrations, with the program's version filled in;
-  it serves every domain, since it has no `domains`, and reads no standard input.
-  `acme-example credential -- <project>` plays the runner's credential adapter: it takes
-  a static API token, and answers with the token applied to `api.example.com`, bearer,
-  on `/v1/projects/<project>` and what is under it, and the placeholder `EXAMPLE_TOKEN`.
-- `credential` reads its settings on standard input, as the
-  [integration contract](https://github.com/qoryai/integrations/tree/main/contracts/integration/v1#settings)
-  defines it: one JSON document and nothing after it but white space, 64 KiB at most.
-  It reads standard input to its end, or until it has more than 64 KiB, before it checks
-  the argument or reads the token, and refuses empty input; `{}` is a document. Nothing
-  in the document is replaced, and no setting is read from the environment.
-- `credential` takes no flags. `--settings`, like any other flag, is refused before
-  standard input is read, in one line on standard error with nothing on standard output.
-- The settings hand in the token inline, `token`, or as `token_file`, a file only its
-  owner reads, never both: settings with the two are refused, by name, never by value.
-  The token is checked the same way from either: not empty, and no white space, control
-  character or byte that is not ASCII. The description's `token` carries
-  `x-secret-name`, `EXAMPLE_API_TOKEN`: the name a control plane suggests for storing
-  it, distinct from the placeholder `EXAMPLE_TOKEN` a run sees.
+  it serves every domain, since it has no `domains`. `acme-example credential --settings
+  <json> -- <project>` plays the runner's credential adapter: it reads a static API token
+  from `token_file`, a file only its owner reads, and answers with the token applied to
+  `api.example.com`, bearer, on `/v1/projects/<project>` and what is under it, and the
+  placeholder `EXAMPLE_TOKEN`. The secret `token` is refused on a command line, and
+  reported by name, never by value.
 - The tests, which hand what the program prints to the `conformance` package of
-  `github.com/qoryai/integrations`: the description, the answer, and each failure, the
-  refused `--settings` among them. They pin qoryai/integrations at main's commit 0970afb,
-  `v0.2.1-0.20261003184833-0970afb56b2a`, the contract with settings on standard input,
-  until its next tag.
+  `github.com/qoryai/integrations` v0.2.0: the description, the answer, and each failure.
 - `ci.yml` and `release.yml`, which call the workflows of qoryai/integrations at
   `@v0.2.0`: its checks on every push to `main` and pull request, and on a tag `vX.Y.Z` a
   release by the rule every integration's releases follow.

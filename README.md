@@ -6,8 +6,8 @@ rename the example, replace its logic, and release.
 It contains a working integration, `acme-example`, that:
 
 - answers `describe` with its description;
-- plays the `credential` role: takes an API token from its settings, inline or in a file,
-  and gives a run access to one project's paths on `api.example.com`;
+- plays the `credential` role: reads an API token from a file and gives a run access to
+  one project's paths on `api.example.com`;
 - is tested against the contract with the `conformance` package of
   [qoryai/integrations](https://github.com/qoryai/integrations);
 - has CI and release workflows that call the shared ones in qoryai/integrations.
@@ -17,8 +17,8 @@ It contains a working integration, `acme-example`, that:
 | Path | What it is |
 |---|---|
 | `description.json` | The integration's description, without the version |
-| `settings.go` | `Describe`, and `ReadSettings`, which reads the settings from standard input and validates them |
-| `credential.go` | The credential role: `ParseProject`, `CheckToken`, `ReadTokenFile`, `NewAnswer` |
+| `settings.go` | `Describe`, and `ReadSettings`, which validates the settings |
+| `credential.go` | The credential role: `ParseProject`, `ReadTokenFile`, `NewAnswer` |
 | `cmd/acme-example/` | The program: `describe` and `credential` |
 | `*_test.go` | Tests, including conformance checks |
 | `.github/workflows/` | `ci.yml` and `release.yml` |
@@ -56,29 +56,14 @@ mints or fetches a token for the argument, as
 Rules every program follows
 ([integration contract](https://github.com/qoryai/integrations/tree/main/contracts/integration/v1)):
 
-- `describe` prints one JSON document, takes no settings, reads no standard input and
-  makes no network call.
-- A role is started as `<program> <role> -- <argument>`. `--` is always there and ends
-  the flags, so the argument is never read as a flag. A role takes no flags: refuse
-  `--settings` as any flag you do not define.
-- The settings are one JSON document on standard input, `{}` when there are none. Read
-  standard input to its end before you act, and refuse empty input, anything after the
-  document but white space, and more than 64 KiB. Nothing in it is replaced: a `$` is a
-  `$`. Read no setting from the environment.
+- `describe` prints one JSON document, takes no settings and makes no network call.
+- A role is started as `<program> <role> --settings <json> -- <argument>`. `--` ends the
+  flags, so the argument is never read as a flag.
 - On success: exit 0 and print one JSON document on standard output, nothing else.
 - On failure: exit non-zero, print nothing on standard output, and write one line on
   standard error that says what failed. Never print a secret.
-- A secret is a top-level setting marked `writeOnly`. It comes inline as `<name>`, or as
-  `<name>_file`, a file only the program's user reads, never both: refuse settings that
-  contain the two. It may carry `x-secret-name`, the name a control plane suggests for
-  storing it, such as the example's `EXAMPLE_API_TOKEN`; the program never sees that
-  name.
-
-To run the example's role by hand:
-
-```sh
-acme-example credential -- my-project < settings.json
-```
+- A secret is a top-level setting marked `writeOnly`, with a `<name>_file` setting next to
+  it. Refuse the secret's value on the command line; read it from the file.
 
 The credential role's answer is the runner's credential document
 ([§Credentials](https://github.com/qoryai/runner/tree/main/contracts/runner/v1#credentials)):
@@ -98,8 +83,7 @@ The tests run the program and check its output with
 
 - `conformance.Description`: `describe` output against the contract's schema.
 - `conformance.Credential`: the credential answer against the runner's schema.
-- `conformance.Failure`: exit status and output of every failure, the refused
-  `credential --settings '{}' -- my-project` among them.
+- `conformance.Failure`: exit status and output of every failure.
 
 Add a test case for every refusal you add. Tests must not use the network or real
 secrets. CI also runs `gofmt`, `go vet`, `go build` and
