@@ -4,13 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
-	"io"
 	"os"
 	"path/filepath"
 	"runtime/debug"
 	"strings"
-	"sync/atomic"
 	"testing"
 
 	example "github.com/qoryai/integration-template"
@@ -33,8 +30,8 @@ func tokenFile(t *testing.T, content string, perm os.FileMode) string {
 	return file
 }
 
-// settings is a settings document for standard input.
-func settings(t *testing.T, doc map[string]any) string {
+// word is a settings document as the command line hands it in, one word.
+func word(t *testing.T, doc map[string]any) string {
 	t.Helper()
 	b, err := json.Marshal(doc)
 	if err != nil {
@@ -43,34 +40,15 @@ func settings(t *testing.T, doc map[string]any) string {
 	return string(b)
 }
 
-// eofReader is standard input that records when it has been read, and when to its end.
-type eofReader struct {
-	r         io.Reader
-	read, eof atomic.Bool
-}
-
-func (e *eofReader) Read(p []byte) (int, error) {
-	e.read.Store(true)
-	n, err := e.r.Read(p)
-	if errors.Is(err, io.EOF) {
-		e.eof.Store(true)
-	}
-	return n, err
-}
-
 // TestDescribeConforms runs describe whole and hands what it printed to the integration
 // contract's conformance check: one JSON document, indented, with one trailing newline
-// and the program's version filled in. describe reads no standard input.
+// and the program's version filled in.
 func TestDescribeConforms(t *testing.T) {
 	defer func(v string) { version = v }(version)
 	version = "1.2.3"
 	var out, errs bytes.Buffer
-	in := &eofReader{r: strings.NewReader("{}")}
-	if code := run(context.Background(), []string{"describe"}, in, &out, &errs); code != 0 || errs.Len() != 0 {
+	if code := run(context.Background(), []string{"describe"}, &out, &errs); code != 0 || errs.Len() != 0 {
 		t.Fatalf("exit %d: %s", code, errs.String())
-	}
-	if in.read.Load() {
-		t.Error("describe reads standard input")
 	}
 	if err := conformance.Description(out.Bytes()); err != nil {
 		t.Fatalf("%v\n%s", err, out.String())
@@ -84,103 +62,24 @@ func TestDescribeConforms(t *testing.T) {
 	}
 }
 
-// TestTheAnswerIsPinned runs credential whole, with the settings on standard input, the
-// token's file or the token itself, hands what it printed to the runner's credential
-// schema, and pins it byte for byte: the token without its file's newline, no expiry,
-// the project's paths alone, and the placeholder.
+// TestTheAnswerIsPinned runs credential whole, hands what it printed to the runner's
+// credential schema, and pins it byte for byte: the token without its file's newline,
+// no expiry, the project's paths alone, and the placeholder.
 func TestTheAnswerIsPinned(t *testing.T) {
 	file := tokenFile(t, token+"\n", 0o600)
+	var out, errs bytes.Buffer
+	code := run(context.Background(), []string{"credential", "--settings", word(t, map[string]any{"token_file": file}), "--", "my-project"}, &out, &errs)
+	if code != 0 || errs.Len() != 0 {
+		t.Fatalf("exit %d: %s", code, errs.String())
+	}
+	if err := conformance.Credential(out.Bytes()); err != nil {
+		t.Fatalf("%v\n%s", err, out.String())
+	}
 	want := `{"version":1,"token":"` + token + `","apply":[` +
 		`{"hosts":["api.example.com"],"scheme":"bearer","paths":["/v1/projects/my-project","/v1/projects/my-project/*"]}],` +
 		`"placeholders":["EXAMPLE_TOKEN"]}` + "\n"
-	for _, tc := range []struct {
-		name  string
-		args  []string
-		stdin string
-	}{
-		{"the token file", []string{"credential", "--", "my-project"}, settings(t, map[string]any{"token_file": file})},
-		{"the token", []string{"credential", "--", "my-project"}, settings(t, map[string]any{"token": token})},
-		{"the token, white space after", []string{"credential", "--", "my-project"}, settings(t, map[string]any{"token": token}) + "\n \t\r\n"},
-		{"no --", []string{"credential", "my-project"}, settings(t, map[string]any{"token_file": file})},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			in := &eofReader{r: strings.NewReader(tc.stdin)}
-			var out, errs bytes.Buffer
-			code := run(context.Background(), tc.args, in, &out, &errs)
-			if code != 0 || errs.Len() != 0 {
-				t.Fatalf("exit %d: %s", code, errs.String())
-			}
-			if !in.eof.Load() {
-				t.Error("standard input is not read to its end")
-			}
-			if err := conformance.Credential(out.Bytes()); err != nil {
-				t.Fatalf("%v\n%s", err, out.String())
-			}
-			if out.String() != want {
-				t.Errorf("credential prints\n%s\nwant\n%s", out.String(), want)
-			}
-		})
-	}
-}
-
-// TestCredentialRefusesTheSettingsFlag runs credential with --settings, in each of its
-// forms, the first as the integration contract's guide runs it, with valid settings on
-// standard input and a token file that is valid, so the flag alone is wrong. credential
-// takes no flags, so each is refused before standard input is read, with one line that
-// names the flag and nothing on standard output.
-func TestCredentialRefusesTheSettingsFlag(t *testing.T) {
-	file := tokenFile(t, token, 0o600)
-	for _, args := range [][]string{
-		{"credential", "--settings", "{}", "--", "a/b"},
-		{"credential", "--settings", "{}", "--", "my-project"},
-		{"credential", "--settings", "-", "--", "my-project"},
-		{"credential", "--settings=-", "--", "my-project"},
-		{"credential", "-settings", "-", "my-project"},
-	} {
-		in := &eofReader{r: strings.NewReader(settings(t, map[string]any{"token_file": file}))}
-		var out, errs bytes.Buffer
-		code := run(context.Background(), args, in, &out, &errs)
-		if err := conformance.Failure(code, out.Bytes(), errs.Bytes()); err != nil {
-			t.Errorf("%q: %v", args, err)
-		}
-		if want := program + " credential: flag provided but not defined: -settings\n"; errs.String() != want {
-			t.Errorf("%q: stderr %q, want %q", args, errs.String(), want)
-		}
-		if in.read.Load() {
-			t.Errorf("%q: standard input is read for a flag that is refused", args)
-		}
-	}
-}
-
-// TestCredentialReadsStandardInputBeforeItChecksTheArgument checks that an argument is
-// refused after standard input is read to its end, so the writer is never cut off: none,
-// two, and the empty one a run without an argument passes, which the project's pattern
-// refuses, not the count.
-func TestCredentialReadsStandardInputBeforeItChecksTheArgument(t *testing.T) {
-	for _, tc := range []struct {
-		name string
-		args []string
-		want string
-	}{
-		{"none", []string{"credential", "--"}, program + " credential: want one argument, a project's name\n"},
-		{"two", []string{"credential", "--", "my-project", "other"}, program + " credential: want one argument, a project's name\n"},
-		{"empty", []string{"credential", "--", ""}, program + ` credential: "" is not a project's name, which matches [a-z0-9][a-z0-9-]{0,62}` + "\n"},
-		{"empty, no --", []string{"credential", ""}, program + ` credential: "" is not a project's name, which matches [a-z0-9][a-z0-9-]{0,62}` + "\n"},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			in := &eofReader{r: strings.NewReader(settings(t, map[string]any{"token": token}))}
-			var out, errs bytes.Buffer
-			code := run(context.Background(), tc.args, in, &out, &errs)
-			if !in.eof.Load() {
-				t.Error("the argument is refused before standard input is read to its end")
-			}
-			if err := conformance.Failure(code, out.Bytes(), errs.Bytes()); err != nil {
-				t.Error(err)
-			}
-			if errs.String() != tc.want {
-				t.Errorf("stderr %q, want %q", errs.String(), tc.want)
-			}
-		})
+	if out.String() != want {
+		t.Errorf("credential prints\n%s\nwant\n%s", out.String(), want)
 	}
 }
 
@@ -194,44 +93,37 @@ func TestEveryFailureConformsAndCarriesNoToken(t *testing.T) {
 	if err := os.Symlink(own, link); err != nil {
 		t.Fatal(err)
 	}
-	with := func(file string) string { return settings(t, map[string]any{"token_file": file}) }
-	inline := func(token string) string { return settings(t, map[string]any{"token": token}) }
-	cred := []string{"credential", "--", "my-project"}
+	with := func(file string) string { return word(t, map[string]any{"token_file": file}) }
 	for _, tc := range []struct {
-		name  string
-		args  []string
-		stdin string
-		want  string
+		name string
+		args []string
+		want string
 	}{
-		{"describe with an argument", []string{"describe", "my-project"}, "", "describe takes no arguments"},
-		{"a flag it does not know", []string{"credential", "--token", token, "--", "my-project"}, with(own), "flag provided but not defined: -token"},
-		{"empty standard input", cred, "", "the settings on standard input are empty"},
-		{"white space on standard input", cred, " \n\t\r\n", "the settings on standard input are empty"},
-		{"settings that are not JSON", cred, "token_file=" + own, "not one JSON document"},
-		{"two documents on standard input", cred, with(own) + "\n" + with(own), "something other than white space follows it"},
-		{"something after the document", cred, inline(token) + token, "something other than white space follows it"},
-		{"more than 64 KiB on standard input", cred, with(own) + strings.Repeat(" ", 65537-len(with(own))), "larger than 64 KiB, 65536 bytes"},
-		{"no token", cred, "{}", "missing property 'token_file', or missing property 'token'"},
-		{"the token beside its file", cred, settings(t, map[string]any{"token_file": own, "token": token}), "contain both token and token_file; a secret has one source"},
-		{"a setting it does not know", cred, settings(t, map[string]any{"token_file": own, "api_token": token}), "additional properties 'api_token' not allowed"},
-		{"a token with white space", cred, inline(token + " " + token), "the token in the settings contains white space"},
-		{"a token with a newline", cred, inline(token + "\n"), "the token in the settings contains white space"},
-		{"a token with a control character", cred, inline(token + "\x00"), "the token in the settings contains white space, a control character"},
-		{"a missing token file", cred, with(filepath.Join(t.TempDir(), "none")), "no such file"},
-		{"a symbolic link", cred, with(link), "is a symbolic link"},
-		{"a token file the group reads", cred, with(tokenFile(t, token, 0o640)), "others may read it"},
-		{"a token file others read", cred, with(tokenFile(t, token, 0o604)), "others may read it"},
-		{"a directory", cred, with(t.TempDir()), "not a regular file"},
-		{"a token file with two lines", cred, with(tokenFile(t, token+"\n"+token+"\n", 0o600)), "contains white space"},
-		{"an argument the pattern refuses", []string{"credential", "--", "My/Project"}, with(own), `"My/Project" is not a project's name`},
-		{"an argument too long", []string{"credential", "--", strings.Repeat("a", 64)}, with(own), "is not a project's name"},
-		{"an argument like a flag", []string{"credential", "--", "-my-project"}, with(own), `"-my-project" is not a project's name`},
-		{"an argument like a flag of its own", []string{"credential", "--", "--token"}, with(own), `"--token" is not a project's name`},
-		{"an argument with a newline", []string{"credential", "--", "my-project\nx"}, with(own), `"my-project\nx" is not a project's name`},
+		{"describe with an argument", []string{"describe", "--settings", "{}"}, "describe takes no arguments"},
+		{"no settings", []string{"credential", "--", "my-project"}, "--settings is required"},
+		{"no argument", []string{"credential", "--settings", with(own)}, "want one argument"},
+		{"two arguments", []string{"credential", "--settings", with(own), "--", "my-project", "other"}, "want one argument"},
+		{"a flag it does not know", []string{"credential", "--token", token, "--", "my-project"}, "flag provided but not defined: -token"},
+		{"settings that are not JSON", []string{"credential", "--settings", "token_file=" + own, "--", "my-project"}, "not one JSON document"},
+		{"no token file", []string{"credential", "--settings", "{}", "--", "my-project"}, "missing property 'token_file'"},
+		{"the token on the command line", []string{"credential", "--settings", word(t, map[string]any{"token": token}), "--", "my-project"}, "contain token, a secret"},
+		{"the token beside its file", []string{"credential", "--settings", word(t, map[string]any{"token_file": own, "token": token}), "--", "my-project"}, "contain token, a secret"},
+		{"a setting it does not know", []string{"credential", "--settings", word(t, map[string]any{"token_file": own, "api_token": token}), "--", "my-project"}, "additional properties 'api_token' not allowed"},
+		{"a missing token file", []string{"credential", "--settings", with(filepath.Join(t.TempDir(), "none")), "--", "my-project"}, "no such file"},
+		{"a symbolic link", []string{"credential", "--settings", with(link), "--", "my-project"}, "is a symbolic link"},
+		{"a token file the group reads", []string{"credential", "--settings", with(tokenFile(t, token, 0o640)), "--", "my-project"}, "others may read it"},
+		{"a token file others read", []string{"credential", "--settings", with(tokenFile(t, token, 0o604)), "--", "my-project"}, "others may read it"},
+		{"a directory", []string{"credential", "--settings", with(t.TempDir()), "--", "my-project"}, "not a regular file"},
+		{"a token file with two lines", []string{"credential", "--settings", with(tokenFile(t, token+"\n"+token+"\n", 0o600)), "--", "my-project"}, "more than the token"},
+		{"an argument the pattern refuses", []string{"credential", "--settings", with(own), "--", "My/Project"}, `"My/Project" is not a project's name`},
+		{"an argument too long", []string{"credential", "--settings", with(own), "--", strings.Repeat("a", 64)}, "is not a project's name"},
+		{"an argument like a flag", []string{"credential", "--settings", with(own), "--", "-my-project"}, `"-my-project" is not a project's name`},
+		{"an argument like a flag of its own", []string{"credential", "--settings", with(own), "--", "--settings"}, `"--settings" is not a project's name`},
+		{"an argument with a newline", []string{"credential", "--settings", with(own), "--", "my-project\nx"}, `"my-project\nx" is not a project's name`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var out, errs bytes.Buffer
-			code := run(context.Background(), tc.args, strings.NewReader(tc.stdin), &out, &errs)
+			code := run(context.Background(), tc.args, &out, &errs)
 			if err := conformance.Failure(code, out.Bytes(), errs.Bytes()); err != nil {
 				t.Fatalf("exit %d, stdout %q, stderr %q: %v", code, out.String(), errs.String(), err)
 			}
@@ -247,17 +139,12 @@ func TestEveryFailureConformsAndCarriesNoToken(t *testing.T) {
 }
 
 // TestUsage pins that no command, a command the program does not know, and a request
-// for help print the usage and exit 2, nothing on standard output, and read no standard
-// input.
+// for help print the usage and exit 2, and nothing on standard output.
 func TestUsage(t *testing.T) {
 	for _, args := range [][]string{nil, {"mint"}, {"credential", "-h"}} {
-		in := &eofReader{r: strings.NewReader("{}")}
 		var out, errs bytes.Buffer
-		if code := run(context.Background(), args, in, &out, &errs); code != 2 || out.Len() != 0 || errs.String() != usage+"\n" {
+		if code := run(context.Background(), args, &out, &errs); code != 2 || out.Len() != 0 || errs.String() != usage+"\n" {
 			t.Errorf("%q: exit %d, stdout %q, stderr %q", args, code, out.String(), errs.String())
-		}
-		if in.read.Load() {
-			t.Errorf("%q: standard input is read", args)
 		}
 	}
 }
@@ -331,7 +218,7 @@ func TestTheReadmeDeclaresWhatTheProgramAccepts(t *testing.T) {
 			t.Errorf("README.md does not show\n%s", block)
 		}
 	}
-	if s, err := example.ReadSettings(strings.NewReader(settings)); err != nil || s.TokenFile == "" {
+	if s, err := example.ReadSettings(settings); err != nil || s.TokenFile == "" {
 		t.Errorf("the README's settings: %+v, %v", s, err)
 	}
 	if _, err := example.ParseProject("my-project"); err != nil {

@@ -1,9 +1,8 @@
 // Command acme-example is the integration template's example program, the runner's
-// credential adapter for the Example API: `acme-example credential -- <project>` reads
-// its settings on standard input, takes the API token they contain or reads it from the
-// file they name, and prints the runner's credential document, the token applied to the
-// project's paths alone. `acme-example describe` prints the integration's description,
-// contracts/integration/v1.
+// credential adapter for the Example API: `acme-example credential --settings <json> --
+// <project>` reads the API token from the file the settings name and prints the runner's
+// credential document, the token applied to the project's paths alone. `acme-example
+// describe` prints the integration's description, contracts/integration/v1.
 package main
 
 import (
@@ -24,7 +23,7 @@ import (
 
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	code := run(ctx, os.Args[1:], os.Stdin, os.Stdout, os.Stderr)
+	code := run(ctx, os.Args[1:], os.Stdout, os.Stderr)
 	stop()
 	os.Exit(code)
 }
@@ -57,11 +56,11 @@ func programVersion(ldflags string, read func() (*debug.BuildInfo, bool)) string
 // usage is what the command prints when it is run without a command it knows.
 const usage = "usage:\n" +
 	"  " + program + " describe\n" +
-	"  " + program + " credential [--] PROJECT < SETTINGS"
+	"  " + program + " credential --settings JSON [--] PROJECT"
 
 // run is the command, with its streams, so a test runs it whole. It returns the exit
 // status; an error is one line on stderr describing what failed, never a secret.
-func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
 		fmt.Fprintln(stderr, usage)
 		return 2
@@ -69,7 +68,7 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.
 	var err error
 	switch args[0] {
 	case "credential":
-		err = credential(ctx, args[1:], stdin, stdout)
+		err = credential(ctx, args[1:], stdout)
 	case "describe":
 		err = describe(args[1:], stdout)
 	default:
@@ -88,7 +87,7 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.
 }
 
 // describe prints the integration's description, one JSON document. It takes no
-// settings, reads no standard input and reaches no network.
+// settings and reaches no network.
 func describe(args []string, stdout io.Writer) error {
 	if len(args) != 0 {
 		return errors.New("describe takes no arguments")
@@ -102,32 +101,33 @@ func describe(args []string, stdout io.Writer) error {
 }
 
 // credential reads the token and prints the runner's credential document, nothing else
-// on standard output. The settings are one document on standard input, the only input
-// besides the argument, so a machine and a control plane hand them in the same way. It
-// takes no flags, which it parses first, since that needs no input, so a flag such as
-// --settings is an error of one line, like any other, before standard input is read;
-// then it reads standard input whole, before it checks the argument. `--` ends the
-// flags, so the argument is never read as one. ctx ends on an interrupt, and an
-// interrupted role prints no answer; a role that mints its token from a system's API
-// passes ctx to the request.
-func credential(ctx context.Context, args []string, stdin io.Reader, stdout io.Writer) error {
+// on standard output. The settings are one document, the only input besides the
+// argument, so a machine and a control plane hand them in the same way; `--` ends the
+// flags, so the argument is never read as one. A flag it does not know is an error of
+// one line, like any other. ctx ends on an interrupt, and an interrupted role prints
+// no answer; a role that mints its token from a system's API passes ctx to the request.
+func credential(ctx context.Context, args []string, stdout io.Writer) error {
 	fs := flag.NewFlagSet("credential", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
+	doc := fs.String("settings", "", "the settings, one JSON document")
 	if err := fs.Parse(args); err != nil {
-		return err
-	}
-	s, err := example.ReadSettings(stdin)
-	if err != nil {
 		return err
 	}
 	if fs.NArg() != 1 {
 		return errors.New("want one argument, a project's name")
 	}
+	if *doc == "" {
+		return errors.New("--settings is required")
+	}
+	s, err := example.ReadSettings(*doc)
+	if err != nil {
+		return err
+	}
 	project, err := example.ParseProject(fs.Arg(0))
 	if err != nil {
 		return err
 	}
-	token, err := readToken(s)
+	token, err := example.ReadTokenFile(s.TokenFile)
 	if err != nil {
 		return err
 	}
@@ -140,16 +140,4 @@ func credential(ctx context.Context, args []string, stdin io.Reader, stdout io.W
 	}
 	_, err = fmt.Fprintf(stdout, "%s\n", b)
 	return err
-}
-
-// readToken is the API token the settings hand in: the token itself, or else the file
-// that contains it.
-func readToken(s example.Settings) (string, error) {
-	if s.Token != "" {
-		if err := example.CheckToken(s.Token); err != nil {
-			return "", err
-		}
-		return s.Token, nil
-	}
-	return example.ReadTokenFile(s.TokenFile)
 }

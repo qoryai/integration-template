@@ -13,16 +13,15 @@
     "properties": {
       "token_file": {
         "title": "Token file",
-        "description": "A file that contains the API token and that only its owner reads: the token kept on disk. Set this or token, never both.",
+        "description": "A file that contains the API token and that only its owner reads: how a machine hands the token in.",
         "type": "string",
         "minLength": 1
       },
       "token": {
         "title": "Token",
-        "description": "The API token itself, inline in the settings. Secret: written, never read back. Set this or token_file, never both.",
+        "description": "The API token. Secret: written, never read back, and never on a command line.",
         "type": "string",
         "writeOnly": true,
-        "x-secret-name": "EXAMPLE_API_TOKEN",
         "minLength": 1
       }
     }
