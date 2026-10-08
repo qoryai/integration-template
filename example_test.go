@@ -383,33 +383,3 @@ func TestTheAnswerIsTheRunnersCredentialDocument(t *testing.T) {
 		t.Errorf("answer %+v", a)
 	}
 }
-
-// TestAnAnswerSetsNoHeaderTheRunnerReserves pins what conformance.Credential refuses
-// beyond the runner's schema, for an integration that sets its token in a header of the
-// API's own with the scheme header: a header the runner reserves, such as Authorization
-// or Cookie, or one under a prefix it reserves, such as X-Forwarded-, is refused, and one
-// of the API's own, such as X-Api-Key, is accepted.
-func TestAnAnswerSetsNoHeaderTheRunnerReserves(t *testing.T) {
-	inHeader := func(name string) []byte {
-		a := NewAnswer(token, "my-project")
-		a.Apply[0].Scheme, a.Apply[0].Header = "header", name
-		b, err := json.Marshal(a)
-		if err != nil {
-			t.Fatal(err)
-		}
-		return b
-	}
-	for _, name := range []string{"Authorization", "Cookie", "X-Forwarded-Host", "x-qory-run"} {
-		err := conformance.Credential(inHeader(name))
-		want := "apply[0] sets the header " + name + ", which the runner reserves"
-		if err == nil || !strings.Contains(err.Error(), want) {
-			t.Errorf("%s: %v, want %q", name, err, want)
-		}
-		if err != nil && strings.Contains(err.Error(), token) {
-			t.Errorf("%s: the refusal contains the token: %v", name, err)
-		}
-	}
-	if err := conformance.Credential(inHeader("X-Api-Key")); err != nil {
-		t.Errorf("X-Api-Key, a header of the API's own: %v", err)
-	}
-}

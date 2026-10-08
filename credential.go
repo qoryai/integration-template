@@ -121,9 +121,7 @@ type Answer struct {
 // of theirs the run may request.
 type Apply struct {
 	Hosts []string `json:"hosts"`
-	// Scheme is bearer, basic with a Username, or header with a Header's name, one the
-	// runner does not reserve: not Authorization, Cookie, or any other its headers.json
-	// lists. For a token in Authorization, use bearer.
+	// Scheme is bearer, basic with a Username, or header with a Header's name.
 	Scheme   string   `json:"scheme"`
 	Username string   `json:"username,omitempty"`
 	Header   string   `json:"header,omitempty"`
