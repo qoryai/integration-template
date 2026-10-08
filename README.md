@@ -17,7 +17,7 @@ It contains a working integration, `acme-example`, that:
 | Path | What it is |
 |---|---|
 | `description.json` | The integration's description, without the version |
-| `settings.go` | `Describe`, and `ReadSettings`, which reads the settings from standard input and validates them against the schema and the credential role's `required` |
+| `settings.go` | `Describe`, and `ReadSettings`, which reads the settings from standard input and validates them |
 | `credential.go` | The credential role: `ParseProject`, `CheckToken`, `ReadTokenFile`, `NewAnswer` |
 | `cmd/acme-example/` | The program: `describe` and `credential` |
 | `*_test.go` | Tests, including conformance checks |
@@ -37,7 +37,7 @@ programs Qory publishes
 | Module path | `go.mod`, and the import in `cmd/acme-example/main.go` and `main_test.go` |
 | Package name | `package example` in every `.go` file at the root |
 | Program name | the directory `cmd/acme-example/`, the `program` constant in `main.go`, `program:` in `.github/workflows/release.yml`, `/acme-example` in `.gitignore` (a test fails until all four match) |
-| Description | `description.json`: `name`, `title`, `publisher`, `description`, `settings`, the credential role's `argument`, `hosts`, `settings` and `required`; add `domains` if the integration serves only some domains |
+| Description | `description.json`: `name`, `title`, `description`, `settings`, the credential role's `argument` and `hosts`; add `domains` if the integration serves only some domains |
 | Host, paths, placeholder | `credential.go`: `Host`, `Uses`, `Placeholders` |
 | README | this file; a test checks the blocks under *5. Declare and use it* |
 | Changelog | `CHANGELOG.md`: start over with an `[Unreleased]` section; versions start at 0.1.0 |
@@ -58,8 +58,6 @@ Rules every program follows
 
 - `describe` prints one JSON document, takes no settings, reads no standard input and
   makes no network call.
-- The description names its `publisher`: who publishes the program, as you name
-  yourself, and an `https://` URL, which may be absent.
 - A role is started as `<program> <role> -- <argument>`. `--` is always there and ends
   the flags, so the argument is never read as a flag. A role takes no flags: refuse
   `--settings` as any flag you do not define.
@@ -75,23 +73,6 @@ Rules every program follows
   contain the two. It may carry `x-secret-name`, the name a control plane suggests for
   storing it, such as the example's `EXAMPLE_API_TOKEN`; the program never sees that
   name.
-- Each role lists in `settings` the top-level settings the runner hands it, a secret by
-  its `<name>`, and in `required` those it needs: `<name>` or `<name>_file` satisfies a
-  secret. The settings' top level carries no `required`, no `oneOf` and no other rule
-  across settings, which the contract refuses there. Check such a rule in the program.
-
-The example's description names its publisher, and its credential role lists the token
-and requires it:
-
-```json
-"publisher": {"name": "Example", "url": "https://example.com"},
-"credential": {"argument": "[a-z0-9][a-z0-9-]{0,62}", "hosts": ["api.example.com"],
-               "settings": ["token"], "required": ["token"]}
-```
-
-The runner writes the token as `token` or as `token_file`; either satisfies `required`.
-`ReadSettings` refuses settings with neither, or with both, before it checks the
-schema, in one line that names the two and never a value.
 
 To run the example's role by hand:
 
@@ -115,17 +96,10 @@ go test ./...
 The tests run the program and check its output with
 [`conformance`](https://github.com/qoryai/integrations/tree/main/conformance):
 
-- `conformance.Description`: `describe` output against the contract's schema and the
-  rules beyond it, the secrets and each role's `settings` and `required` among them.
+- `conformance.Description`: `describe` output against the contract's schema.
 - `conformance.Credential`: the credential answer against the runner's schema.
 - `conformance.Failure`: exit status and output of every failure, the refused
   `credential --settings '{}' -- my-project` among them.
-
-`TestTheReleaseCheckPassesTheBuiltProgram` makes the check the shared release workflow
-makes before it publishes, from the release of qoryai/integrations after v0.2.0: it
-builds the program as a release does and runs `cmd/integration-conformance`, from the
-version of qoryai/integrations `go.mod` requires, on what `describe` prints. It needs
-the `go` command; `go test -short` skips it.
 
 Add a test case for every refusal you add. Tests must not use the network or real
 secrets. CI also runs `gofmt`, `go vet`, `go build` and
