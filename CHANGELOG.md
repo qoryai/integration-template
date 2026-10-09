@@ -25,8 +25,9 @@ which starts over.
   the answer, and each failure.
 - `ci.yml` and `release.yml`, which call the workflows of qoryai/integrations at
   `@e39423b387cf80ac3128afb7b13ec1c05ab34754`: its checks on every push to `main` and
-  pull request, and on a tag `vX.Y.Z` a release by the rule every integration's releases
-  follow.
+  `next` and on every pull request, where a pull request from this repository's `next`
+  counts the push run on its commit; and on a tag `vX.Y.Z` a release by the rule every
+  integration's releases follow.
 - The README, the guide from renaming the template to listing the integration in the
   catalog.
 - The licence, MIT No Attribution (MIT-0): an integration started from the template
