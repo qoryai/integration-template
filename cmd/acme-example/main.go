@@ -1,6 +1,6 @@
-// Command acme-example is the integration template's example program, the runner's
+// Command acme-example is the integration template's example program, the gateway's
 // credential adapter for the Example API: `acme-example credential --settings <json> --
-// <project>` reads the API token from the file the settings name and prints the runner's
+// <project>` reads the API token from the file the settings name and prints the gateway's
 // credential document, the token applied to the project's paths alone. `acme-example
 // describe` prints the integration's description, contracts/integration/v1.
 package main
@@ -100,7 +100,7 @@ func describe(args []string, stdout io.Writer) error {
 	return err
 }
 
-// credential reads the token and prints the runner's credential document, nothing else
+// credential reads the token and prints the gateway's credential document, nothing else
 // on standard output. The settings are one document, the only input besides the
 // argument, so a machine and a control plane hand them in the same way; `--` ends the
 // flags, so the argument is never read as one. A flag it does not know is an error of

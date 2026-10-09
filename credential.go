@@ -14,16 +14,16 @@ import (
 // most an answer may claim.
 const Host = "api.example.com"
 
-// Placeholders are the variables the runner sets in the enclosure to a value that is no
-// credential, so a program that reads one starts; the runner's proxy sets the token on
+// Placeholders are the variables Forager sets in the enclosure to a value that is no
+// credential, so a program that reads one starts; the gateway's proxy sets the token on
 // its requests.
 var Placeholders = []string{"EXAMPLE_TOKEN"}
 
 // projectShape is the argument's pattern, the credential role's argument matched whole,
-// as the runner matches it: the program refuses what the runner refuses.
+// as the gateway matches it: the program refuses what the gateway refuses.
 var projectShape = regexp.MustCompile(`^(?:` + Describe("").Roles.Credential.Argument + `)$`)
 
-// ParseProject reads the argument the runner passes, a project's name: a lower-case
+// ParseProject reads the argument the gateway passes, a project's name: a lower-case
 // letter or a digit, then up to 62 of them and hyphens. It refuses what the credential
 // role's pattern refuses, a flag such as -x among it.
 func ParseProject(arg string) (string, error) {
@@ -85,12 +85,12 @@ func ReadTokenFile(path string) (string, error) {
 	return token, nil
 }
 
-// Answer is the credential adapter's answer, the runner's credential.schema.json,
+// Answer is the credential adapter's answer, the gateway's credential.schema.json,
 // version 1: the token, when it expires, and where it goes.
 type Answer struct {
 	Version int    `json:"version"`
 	Token   string `json:"token"`
-	// ExpiresAt is when the token stops working, RFC 3339; the runner runs the adapter
+	// ExpiresAt is when the token stops working, RFC 3339; the gateway runs the adapter
 	// again five minutes before. Empty, as for the static token here, is no expiry.
 	ExpiresAt    string   `json:"expires_at,omitempty"`
 	Apply        []Apply  `json:"apply"`
@@ -109,7 +109,7 @@ type Apply struct {
 }
 
 // Uses are where the token goes for a project, the same for the same project every
-// time, since the runner refuses an answer whose hosts, schemes or paths change under a
+// time, since the gateway refuses an answer whose hosts, schemes or paths change under a
 // run: the Example API with bearer, /v1/projects/<project> and what is under it.
 func Uses(project string) []Apply {
 	return []Apply{{

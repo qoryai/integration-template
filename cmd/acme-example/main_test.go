@@ -62,7 +62,7 @@ func TestDescribeConforms(t *testing.T) {
 	}
 }
 
-// TestTheAnswerIsPinned runs credential whole, hands what it printed to the runner's
+// TestTheAnswerIsPinned runs credential whole, hands what it printed to the gateway's
 // credential schema, and pins it byte for byte: the token without its file's newline,
 // no expiry, the project's paths alone, and the placeholder.
 func TestTheAnswerIsPinned(t *testing.T) {
@@ -187,15 +187,17 @@ func TestProgramVersionFallsBackToTheModuleVersion(t *testing.T) {
 }
 
 // declaration is what the README shows under "5. Declare and use it": the integration as a machine's
-// runner.yaml declares it, with its program and settings, and a run's policy that allows
-// its host and selects the credential qory expands the declaration into.
+// forager.yaml declares it under gateway.integrations, with its program and settings, and
+// a run's policy that allows its host and selects the credential qory expands the
+// declaration into.
 func declaration() (integrations, settings, policy string) {
 	d := example.Describe(version)
 	settings = `{"token_file":"/home/dev/.config/acme-example/token"}`
-	integrations = "integrations:\n" +
-		"  " + d.Name + ":\n" +
-		"    program: " + program + "\n" +
-		"    settings: " + settings + "\n"
+	integrations = "gateway:\n" +
+		"  integrations:\n" +
+		"    " + d.Name + ":\n" +
+		"      program: " + program + "\n" +
+		"      settings: " + settings + "\n"
 	policy = "egress:\n" +
 		"  mode: enforce\n" +
 		"  allow: [" + strings.Join(d.Roles.Credential.Hosts, ", ") + "]\n" +

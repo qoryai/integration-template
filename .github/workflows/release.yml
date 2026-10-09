@@ -15,6 +15,6 @@ jobs:
     if: ${{ github.server_url == 'https://github.com' }}
     permissions:
       contents: write
-    uses: qoryai/integrations/.github/workflows/release.yml@v0.2.0
+    uses: qoryai/integrations/.github/workflows/release.yml@5ece0ef39cd762466c2a874f9220014457617610
     with:
       program: acme-example
