@@ -65,8 +65,8 @@ Rules every program follows
 - A secret is a top-level setting marked `writeOnly`, with a `<name>_file` setting next to
   it. Refuse the secret's value on the command line; read it from the file.
 
-The credential role's answer is the runner's credential document
-([§Credentials](https://github.com/qoryai/runner/tree/main/contracts/runner/v1#credentials)):
+The credential role's answer is the gateway's credential document
+([§Credentials](https://github.com/qoryai/forager/tree/main/contracts/forager/v1#credentials)):
 the token, optionally when it expires, and the hosts, scheme and paths it applies to.
 
 More: [Writing an integration](https://github.com/qoryai/integrations/blob/main/docs/writing-an-integration.md).
@@ -82,7 +82,7 @@ The tests run the program and check its output with
 [`conformance`](https://github.com/qoryai/integrations/tree/main/conformance):
 
 - `conformance.Description`: `describe` output against the contract's schema.
-- `conformance.Credential`: the credential answer against the runner's schema.
+- `conformance.Credential`: the credential answer against the gateway's schema.
 - `conformance.Failure`: exit status and output of every failure.
 
 Add a test case for every refusal you add. Tests must not use the network or real
@@ -95,19 +95,21 @@ Install the program on the machine that runs `qory run`, on its `PATH`, from a r
 archive or with `go install <module>/cmd/<program>@latest`. Put the token in a file with
 mode 0600.
 
-Declare it in `~/.config/qory/runner.yaml`. The program is not named `qory-<key>`, so
-`program:` is required:
+Declare it in `~/.config/qory/forager.yaml`, under `gateway.integrations`. The program is
+not named `qory-<key>`, so `program:` is required:
 
 ```yaml
-integrations:
-  example:
-    program: acme-example
-    settings: {"token_file":"/home/dev/.config/acme-example/token"}
+gateway:
+  integrations:
+    example:
+      program: acme-example
+      settings: {"token_file":"/home/dev/.config/acme-example/token"}
 ```
 
 Select the credential in a run's policy:
 
 ```yaml
+version: 1
 egress:
   mode: enforce
   allow: [api.example.com]

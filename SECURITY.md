@@ -32,7 +32,7 @@ A flaw in the template that every integration started from it copies:
   integration's repository. When the flaw came from the template, report it here too.
 - The contract, the conformance checks and the shared workflows are
   [qoryai/integrations'](https://github.com/qoryai/integrations/blob/main/SECURITY.md).
-- The runner, and what it does with a credential role's answer, are the
-  [runner's](https://github.com/qoryai/runner/blob/main/SECURITY.md).
+- Forager, and what it does with a credential role's answer, are
+  [Forager's](https://github.com/qoryai/forager/blob/main/SECURITY.md).
 
 If you are not sure which side something falls on, write anyway.

@@ -10,4 +10,4 @@ on:
 
 jobs:
   go:
-    uses: qoryai/integrations/.github/workflows/go.yml@v0.2.0
+    uses: qoryai/integrations/.github/workflows/go.yml@e39423b387cf80ac3128afb7b13ec1c05ab34754

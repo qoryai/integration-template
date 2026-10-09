@@ -85,7 +85,7 @@ func TestReadSettingsRefusesWhatTheSchemaRefusesAndNeverSaysAValue(t *testing.T)
 }
 
 // TestTheArgumentPatternIsTheParser walks arguments through ParseProject, which matches
-// the credential role's pattern whole, as the runner does: what one refuses, the other
+// the credential role's pattern whole, as the gateway does: what one refuses, the other
 // does.
 func TestTheArgumentPatternIsTheParser(t *testing.T) {
 	for arg, ok := range map[string]bool{
@@ -220,9 +220,9 @@ func TestATokenFileWithMoreThanTheTokenIsRefused(t *testing.T) {
 	}
 }
 
-// TestTheAnswerIsTheRunnersCredentialDocument checks the answer against the runner's
+// TestTheAnswerIsTheGatewaysCredentialDocument checks the answer against the gateway's
 // credential schema, and pins the paths to the project the argument names and no other.
-func TestTheAnswerIsTheRunnersCredentialDocument(t *testing.T) {
+func TestTheAnswerIsTheGatewaysCredentialDocument(t *testing.T) {
 	b, err := json.Marshal(NewAnswer(token, "my-project"))
 	if err != nil {
 		t.Fatal(err)

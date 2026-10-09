@@ -15,16 +15,18 @@ which starts over.
   `cmd/acme-example/`. `acme-example describe` prints the integration's description,
   contracts/integration/v1 of qoryai/integrations, with the program's version filled in;
   it serves every domain, since it has no `domains`. `acme-example credential --settings
-  <json> -- <project>` plays the runner's credential adapter: it reads a static API token
+  <json> -- <project>` plays the gateway's credential adapter: it reads a static API token
   from `token_file`, a file only its owner reads, and answers with the token applied to
   `api.example.com`, bearer, on `/v1/projects/<project>` and what is under it, and the
   placeholder `EXAMPLE_TOKEN`. The secret `token` is refused on a command line, and
   reported by name, never by value.
 - The tests, which hand what the program prints to the `conformance` package of
-  `github.com/qoryai/integrations` v0.2.0: the description, the answer, and each failure.
+  `github.com/qoryai/integrations` v0.2.1-0.20261009095202-e39423b387cf: the description,
+  the answer, and each failure.
 - `ci.yml` and `release.yml`, which call the workflows of qoryai/integrations at
-  `@v0.2.0`: its checks on every push to `main` and pull request, and on a tag `vX.Y.Z` a
-  release by the rule every integration's releases follow.
+  `@e39423b387cf80ac3128afb7b13ec1c05ab34754`: its checks on every push to `main` and
+  pull request, and on a tag `vX.Y.Z` a release by the rule every integration's releases
+  follow.
 - The README, the guide from renaming the template to listing the integration in the
   catalog.
 - The licence, MIT No Attribution (MIT-0): an integration started from the template

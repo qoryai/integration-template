@@ -1,17 +1,17 @@
 // Package example is the integration template's example integration: what the program
 // acme-example does, as a library. Rename it to the system your integration connects.
 //
-// It plays one role, the runner's credential adapter
-// (https://github.com/qoryai/runner/tree/main/contracts/runner/v1#credentials): it reads
+// It plays one role, the gateway's credential adapter
+// (https://github.com/qoryai/forager/tree/main/contracts/forager/v1#credentials): it reads
 // a static API token of the Example API, api.example.com, from a file, and answers with
 // the token and how it is used for the project a run works on, the host, the scheme and
 // the paths. [ParseProject] reads the run's argument, [ReadTokenFile] the token, and
-// [NewAnswer] is the document the runner reads.
+// [NewAnswer] is the document the gateway reads.
 //
 // The argument narrows the answer: a run for the project my-project reaches
 // /v1/projects/my-project and what is under it, and no other path of the host. A token
 // that the system itself scopes, minted for the project alone, bounds a run further; the
-// paths are what the runner enforces whatever the token may do.
+// paths are what the gateway enforces whatever the token may do.
 //
 // [Describe] is the integration's description, the integration contract
 // (https://github.com/qoryai/integrations/tree/main/contracts/integration/v1): its name,
