@@ -198,7 +198,8 @@ func declaration() (integrations, settings, policy string) {
 		"    " + d.Name + ":\n" +
 		"      program: " + program + "\n" +
 		"      settings: " + settings + "\n"
-	policy = "egress:\n" +
+	policy = "version: 1\n" +
+		"egress:\n" +
 		"  mode: enforce\n" +
 		"  allow: [" + strings.Join(d.Roles.Credential.Hosts, ", ") + "]\n" +
 		"credentials:\n" +

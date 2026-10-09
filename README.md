@@ -109,6 +109,7 @@ gateway:
 Select the credential in a run's policy:
 
 ```yaml
+version: 1
 egress:
   mode: enforce
   allow: [api.example.com]
