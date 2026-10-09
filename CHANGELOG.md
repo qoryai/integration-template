@@ -21,10 +21,10 @@ which starts over.
   placeholder `EXAMPLE_TOKEN`. The secret `token` is refused on a command line, and
   reported by name, never by value.
 - The tests, which hand what the program prints to the `conformance` package of
-  `github.com/qoryai/integrations` v0.2.1-0.20261009005336-5ece0ef39cd7: the description,
+  `github.com/qoryai/integrations` v0.2.1-0.20261009095202-e39423b387cf: the description,
   the answer, and each failure.
 - `ci.yml` and `release.yml`, which call the workflows of qoryai/integrations at
-  `@5ece0ef39cd762466c2a874f9220014457617610`: its checks on every push to `main` and
+  `@e39423b387cf80ac3128afb7b13ec1c05ab34754`: its checks on every push to `main` and
   pull request, and on a tag `vX.Y.Z` a release by the rule every integration's releases
   follow.
 - The README, the guide from renaming the template to listing the integration in the
