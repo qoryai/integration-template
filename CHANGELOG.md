@@ -4,7 +4,7 @@ Every release of the integration template, newest first, in the shape of
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The version numbers follow
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and start at 0.1.0; before 1.0
 a minor release may change what an integration started from it relies on, and notes it
-under Upgrading. An integration started from the template keeps a changelog of its own,
+under Upgrading. An integration started from the template keeps a separate changelog,
 which starts over.
 
 ## [Unreleased]

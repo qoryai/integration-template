@@ -118,7 +118,7 @@ func TestEveryFailureConformsAndCarriesNoToken(t *testing.T) {
 		{"an argument the pattern refuses", []string{"credential", "--settings", with(own), "--", "My/Project"}, `"My/Project" is not a project's name`},
 		{"an argument too long", []string{"credential", "--settings", with(own), "--", strings.Repeat("a", 64)}, "is not a project's name"},
 		{"an argument like a flag", []string{"credential", "--settings", with(own), "--", "-my-project"}, `"-my-project" is not a project's name`},
-		{"an argument like a flag of its own", []string{"credential", "--settings", with(own), "--", "--settings"}, `"--settings" is not a project's name`},
+		{"an argument like the --settings flag", []string{"credential", "--settings", with(own), "--", "--settings"}, `"--settings" is not a project's name`},
 		{"an argument with a newline", []string{"credential", "--settings", with(own), "--", "my-project\nx"}, `"my-project\nx" is not a project's name`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
