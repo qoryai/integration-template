@@ -24,11 +24,12 @@ which starts over.
 - The tests, which hand what the program prints to the `conformance` package of
   `github.com/qoryai/integrations` v0.2.1-0.20261009095202-e39423b387cf: the description,
   the answer, and each failure.
-- `ci.yml` and `release.yml`, which call the workflows of qoryai/integrations at
-  `@e39423b387cf80ac3128afb7b13ec1c05ab34754`: its checks on every push to `main` and
-  `next` and on every pull request, where a pull request from this repository's `next`
-  counts the push run on its commit; and on a tag `vX.Y.Z` a release by the rule every
-  integration's releases follow.
+- `ci.yml` and `release.yml`, which call the workflows of qoryai/integrations: `ci.yml`
+  its `go.yml` at `@e09fe60e553bc459d30a528fe8bfd7cb4cc75fa0`, the checks on every push to
+  `main` and `next` and on every pull request, where a pull request from this repository's
+  `next` counts the push run on its commit; and `release.yml` its `release.yml` at
+  `@e39423b387cf80ac3128afb7b13ec1c05ab34754`, on a tag `vX.Y.Z` a release by the rule
+  every integration's releases follow.
 - The README, the guide from renaming the template to listing the integration in the
   catalog.
 - The licence, MIT No Attribution (MIT-0): an integration started from the template
