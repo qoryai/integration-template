@@ -109,6 +109,8 @@ func TestEveryFailureConformsAndCarriesNoToken(t *testing.T) {
 		{"the token on the command line", []string{"credential", "--settings", word(t, map[string]any{"token": token}), "--", "my-project"}, "contain token, a secret"},
 		{"the token beside its file", []string{"credential", "--settings", word(t, map[string]any{"token_file": own, "token": token}), "--", "my-project"}, "contain token, a secret"},
 		{"a setting it does not know", []string{"credential", "--settings", word(t, map[string]any{"token_file": own, "api_token": token}), "--", "my-project"}, "additional properties 'api_token' not allowed"},
+		{"a setting it does not know, and no token file", []string{"credential", "--settings", word(t, map[string]any{"api_token": token}), "--", "my-project"}, "the settings are invalid: additional properties 'api_token' not allowed; the settings contain neither token nor token_file; the credential role requires the secret, so set token_file to a file that contains it"},
+		{"a misspelled token file", []string{"credential", "--settings", word(t, map[string]any{"tokenfile": own}), "--", "my-project"}, "the settings are invalid: additional properties 'tokenfile' not allowed; the settings contain neither token nor token_file; the credential role requires the secret, so set token_file to a file that contains it"},
 		{"a missing token file", []string{"credential", "--settings", with(filepath.Join(t.TempDir(), "none")), "--", "my-project"}, "no such file"},
 		{"a symbolic link", []string{"credential", "--settings", with(link), "--", "my-project"}, "is a symbolic link"},
 		{"a token file the group reads", []string{"credential", "--settings", with(tokenFile(t, token, 0o640)), "--", "my-project"}, "others may read it"},
