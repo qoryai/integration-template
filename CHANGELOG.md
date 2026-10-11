@@ -19,7 +19,8 @@ which starts over.
   from `token_file`, a file only its owner reads, and answers with the token applied to
   `api.example.com`, bearer, on `/v1/projects/<project>` and what is under it, and the
   placeholder `EXAMPLE_TOKEN`. The secret `token` is refused on a command line, and
-  reported by name, never by value.
+  reported by name, never by value. Settings with neither `token` nor `token_file` are
+  refused with a message that says to set `token_file`.
 - The tests, which hand what the program prints to the `conformance` package of
   `github.com/qoryai/integrations` v0.2.1-0.20261009095202-e39423b387cf: the description,
   the answer, and each failure.

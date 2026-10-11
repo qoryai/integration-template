@@ -105,7 +105,7 @@ func TestEveryFailureConformsAndCarriesNoToken(t *testing.T) {
 		{"two arguments", []string{"credential", "--settings", with(own), "--", "my-project", "other"}, "want one argument"},
 		{"a flag it does not know", []string{"credential", "--token", token, "--", "my-project"}, "flag provided but not defined: -token"},
 		{"settings that are not JSON", []string{"credential", "--settings", "token_file=" + own, "--", "my-project"}, "not one JSON document"},
-		{"no token file", []string{"credential", "--settings", "{}", "--", "my-project"}, "missing property 'token_file'"},
+		{"no token file", []string{"credential", "--settings", "{}", "--", "my-project"}, "the settings contain neither token nor token_file; the credential role requires the secret, so set token_file to a file that contains it"},
 		{"the token on the command line", []string{"credential", "--settings", word(t, map[string]any{"token": token}), "--", "my-project"}, "contain token, a secret"},
 		{"the token beside its file", []string{"credential", "--settings", word(t, map[string]any{"token_file": own, "token": token}), "--", "my-project"}, "contain token, a secret"},
 		{"a setting it does not know", []string{"credential", "--settings", word(t, map[string]any{"token_file": own, "api_token": token}), "--", "my-project"}, "additional properties 'api_token' not allowed"},

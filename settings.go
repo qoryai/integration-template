@@ -83,8 +83,9 @@ type Settings struct {
 
 // ReadSettings reads the settings document passed on a command line. It refuses a
 // secret, a setting the schema marks writeOnly, before anything else, because a command
-// line is visible to the machine's other processes; then a document the schema refuses.
-// An error identifies a setting and what is wrong with it, never a value.
+// line is visible to the machine's other processes; then a document with neither a
+// secret <name> nor <name>_file, naming what to set; then a document the schema
+// refuses. An error identifies a setting and what is wrong with it, never a value.
 func ReadSettings(arg string) (Settings, error) {
 	schema, err := settingsSchema()
 	if err != nil {
@@ -98,6 +99,13 @@ func ReadSettings(arg string) (Settings, error) {
 		for _, name := range secrets(schema) {
 			if _, ok := m[name]; ok {
 				return Settings{}, fmt.Errorf("the settings on the command line contain %s, a secret, which the machine's other processes see; set %s_file to a file that contains it instead", name, name)
+			}
+		}
+		for _, name := range secrets(schema) {
+			_, plain := m[name]
+			_, file := m[name+"_file"]
+			if !plain && !file {
+				return Settings{}, fmt.Errorf("the settings contain neither %s nor %s_file; the credential role requires the secret, so set %s_file to a file that contains it", name, name, name)
 			}
 		}
 	}

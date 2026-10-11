@@ -66,7 +66,7 @@ func TestReadSettingsRefusesWhatTheSchemaRefusesAndNeverSaysAValue(t *testing.T)
 	for _, tc := range []struct{ doc, want string }{
 		{`{"token":"` + token + `"}`, "contain token, a secret"},
 		{`{"token_file":"/t","token":"` + token + `"}`, "contain token, a secret"},
-		{`{}`, "missing property 'token_file', or missing property 'token'"},
+		{`{}`, "the settings contain neither token nor token_file; the credential role requires the secret, so set token_file to a file that contains it"},
 		{`{"token_file":""}`, "/token_file: minLength"},
 		{`{"token_file":true}`, "/token_file: got boolean, want string"},
 		{`{"token_file":"/t","tokn":"` + token + `"}`, "additional properties 'tokn' not allowed"},
