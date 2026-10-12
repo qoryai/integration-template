@@ -41,8 +41,8 @@ programs Qory publishes
 | Host, paths, placeholder | `credential.go`: `Host`, `Uses`, `Placeholders` |
 | README | this file; a test checks the blocks under *5. Declare and use it* |
 | Changelog | `CHANGELOG.md`: start over with an `[Unreleased]` section; versions start at 0.1.0 |
-| Template's own files | `CLA.md`, `CONTRIBUTING.md`, `SECURITY.md`: delete or replace |
-| Licence | `LICENSE`: replace it with your own. The template is MIT-0, so the code you take from it needs no notice and no credit. |
+| Template-only files | `CLA.md`, `CONTRIBUTING.md`, `SECURITY.md`: delete or replace |
+| Licence | `LICENSE`: replace it with your licence. The template is MIT-0, so the code you take from it needs no notice and no credit. |
 
 Then run `go test ./...`. It passes when the rename is complete.
 

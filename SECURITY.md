@@ -1,7 +1,7 @@
 # Security
 
-This file is the template's own: a repository started from it deletes it or writes its
-own.
+This file covers only the template: a repository started from the template deletes it or
+writes a new one.
 
 ## Reporting a vulnerability
 

@@ -105,10 +105,12 @@ func TestEveryFailureConformsAndCarriesNoToken(t *testing.T) {
 		{"two arguments", []string{"credential", "--settings", with(own), "--", "my-project", "other"}, "want one argument"},
 		{"a flag it does not know", []string{"credential", "--token", token, "--", "my-project"}, "flag provided but not defined: -token"},
 		{"settings that are not JSON", []string{"credential", "--settings", "token_file=" + own, "--", "my-project"}, "not one JSON document"},
-		{"no token file", []string{"credential", "--settings", "{}", "--", "my-project"}, "missing property 'token_file'"},
+		{"no token file", []string{"credential", "--settings", "{}", "--", "my-project"}, "the settings contain neither token nor token_file; the credential role requires the secret, so set token_file to a file that contains it"},
 		{"the token on the command line", []string{"credential", "--settings", word(t, map[string]any{"token": token}), "--", "my-project"}, "contain token, a secret"},
 		{"the token beside its file", []string{"credential", "--settings", word(t, map[string]any{"token_file": own, "token": token}), "--", "my-project"}, "contain token, a secret"},
 		{"a setting it does not know", []string{"credential", "--settings", word(t, map[string]any{"token_file": own, "api_token": token}), "--", "my-project"}, "additional properties 'api_token' not allowed"},
+		{"a setting it does not know, and no token file", []string{"credential", "--settings", word(t, map[string]any{"api_token": token}), "--", "my-project"}, "the settings are invalid: additional properties 'api_token' not allowed; the settings contain neither token nor token_file; the credential role requires the secret, so set token_file to a file that contains it"},
+		{"a misspelled token file", []string{"credential", "--settings", word(t, map[string]any{"tokenfile": own}), "--", "my-project"}, "the settings are invalid: additional properties 'tokenfile' not allowed; the settings contain neither token nor token_file; the credential role requires the secret, so set token_file to a file that contains it"},
 		{"a missing token file", []string{"credential", "--settings", with(filepath.Join(t.TempDir(), "none")), "--", "my-project"}, "no such file"},
 		{"a symbolic link", []string{"credential", "--settings", with(link), "--", "my-project"}, "is a symbolic link"},
 		{"a token file the group reads", []string{"credential", "--settings", with(tokenFile(t, token, 0o640)), "--", "my-project"}, "others may read it"},
@@ -118,7 +120,7 @@ func TestEveryFailureConformsAndCarriesNoToken(t *testing.T) {
 		{"an argument the pattern refuses", []string{"credential", "--settings", with(own), "--", "My/Project"}, `"My/Project" is not a project's name`},
 		{"an argument too long", []string{"credential", "--settings", with(own), "--", strings.Repeat("a", 64)}, "is not a project's name"},
 		{"an argument like a flag", []string{"credential", "--settings", with(own), "--", "-my-project"}, `"-my-project" is not a project's name`},
-		{"an argument like a flag of its own", []string{"credential", "--settings", with(own), "--", "--settings"}, `"--settings" is not a project's name`},
+		{"an argument like the --settings flag", []string{"credential", "--settings", with(own), "--", "--settings"}, `"--settings" is not a project's name`},
 		{"an argument with a newline", []string{"credential", "--settings", with(own), "--", "my-project\nx"}, `"my-project\nx" is not a project's name`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

@@ -1,7 +1,7 @@
 # Contributing
 
-Thank you for considering a contribution to the integration template. This file is the
-template's own: a repository started from it deletes it or writes its own.
+Thank you for considering a contribution to the integration template. This file covers
+only the template: a repository started from the template deletes it or writes a new one.
 
 ## Where contributions go
 
@@ -15,7 +15,7 @@ template's own: a repository started from it deletes it or writes its own.
 
 **The contract, the conformance checks and the shared workflows** are in
 [qoryai/integrations](https://github.com/qoryai/integrations), and so is the catalog. An
-integration itself goes in a repository of its own, started from this template.
+integration itself goes in a separate repository, started from this template.
 
 ## Contributor Licence Agreement
 
