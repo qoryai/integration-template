@@ -183,7 +183,7 @@ func reasons(v *jsonschema.ValidationError, p *message.Printer) []string {
 	if len(v.InstanceLocation) > 0 {
 		at = "/" + strings.Join(v.InstanceLocation, "/") + ": "
 	}
-	// The validator's own words for these contain the value; a pattern or a format a
+	// The validator's words for these contain the value; a pattern or a format a
 	// setting of yours adds is reported without it.
 	switch k := v.ErrorKind.(type) {
 	case *kind.Pattern:

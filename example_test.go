@@ -15,7 +15,7 @@ import (
 // token is the API token the tests hand in: synthetic, and what no error may contain.
 const token = "example-token-synthetic-must-not-leak"
 
-// tokenFile writes content to a file of mode perm in a directory of the test's own.
+// tokenFile writes content to a file of mode perm in a temporary directory for the test.
 func tokenFile(t *testing.T, content string, perm os.FileMode) string {
 	t.Helper()
 	file := filepath.Join(t.TempDir(), "token")
@@ -151,8 +151,9 @@ func TestATokenFileOthersMayReadIsRefused(t *testing.T) {
 	}
 }
 
-// TestATokenFileIsReadFromWhatWasOpened pins that what is not the owner's own regular
-// file is refused without being read, and without waiting on a pipe.
+// TestATokenFileIsReadFromWhatWasOpened pins that what is not a regular file, such as a
+// symbolic link, a pipe or a directory, is refused without being read, and without
+// waiting on a pipe.
 func TestATokenFileIsReadFromWhatWasOpened(t *testing.T) {
 	dir := t.TempDir()
 	own := tokenFile(t, token, 0o600)

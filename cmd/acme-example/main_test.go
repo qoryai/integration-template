@@ -17,7 +17,7 @@ import (
 // token is the API token the tests hand in: synthetic, and what no error may contain.
 const token = "example-token-synthetic-must-not-leak"
 
-// tokenFile writes content to a file of mode perm in a directory of the test's own.
+// tokenFile writes content to a file of mode perm in a temporary directory for the test.
 func tokenFile(t *testing.T, content string, perm os.FileMode) string {
 	t.Helper()
 	file := filepath.Join(t.TempDir(), "token")
