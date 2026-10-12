@@ -115,6 +115,8 @@ func TestEveryFailureConformsAndCarriesNoToken(t *testing.T) {
 		{"a symbolic link", []string{"credential", "--settings", with(link), "--", "my-project"}, "is a symbolic link"},
 		{"a token file the group reads", []string{"credential", "--settings", with(tokenFile(t, token, 0o640)), "--", "my-project"}, "group or others have permissions on it"},
 		{"a token file others read", []string{"credential", "--settings", with(tokenFile(t, token, 0o604)), "--", "my-project"}, "group or others have permissions on it"},
+		{"a token file the group writes", []string{"credential", "--settings", with(tokenFile(t, token, 0o620)), "--", "my-project"}, "group or others have permissions on it"},
+		{"a token file others execute", []string{"credential", "--settings", with(tokenFile(t, token, 0o601)), "--", "my-project"}, "group or others have permissions on it"},
 		{"a directory", []string{"credential", "--settings", with(t.TempDir()), "--", "my-project"}, "not a regular file"},
 		{"a token file with two lines", []string{"credential", "--settings", with(tokenFile(t, token+"\n"+token+"\n", 0o600)), "--", "my-project"}, "more than the token"},
 		{"an argument the pattern refuses", []string{"credential", "--settings", with(own), "--", "My/Project"}, `"My/Project" is not a project's name`},

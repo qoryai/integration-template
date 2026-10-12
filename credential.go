@@ -37,14 +37,14 @@ func ParseProject(arg string) (string, error) {
 // file apart: a token is a few hundred bytes.
 const maxTokenFile = 64 << 10
 
-// ReadTokenFile reads the API token from a file that only its owner may read. It opens
-// the file once, never through a symbolic link and without waiting on a pipe, and reads
-// what it opened: a file that is not a regular one, that grants group or others any
-// permission, or that belongs to another user than the one the program runs as is refused
-// before it is read, and one larger than a token is refused having read at most one byte
-// more than a token may hold. The token is the file's content without one trailing
-// newline; an empty token, and one with white space or a control character in it, which
-// no header carries, are refused. An error names the file, never its content.
+// ReadTokenFile reads the API token from a file that only its owner has any permission
+// on. It opens the file once, never through a symbolic link and without waiting on a
+// pipe, and reads what it opened: a file that is not a regular one, that grants group or
+// others any permission, or that belongs to another user than the one the program runs as
+// is refused before it is read, and one larger than a token is refused having read at
+// most one byte more than a token may hold. The token is the file's content without one
+// trailing newline; an empty token, and one with white space or a control character in
+// it, which no header carries, are refused. An error names the file, never its content.
 func ReadTokenFile(path string) (string, error) {
 	f, err := os.OpenFile(path, os.O_RDONLY|syscall.O_NOFOLLOW|syscall.O_NONBLOCK, 0)
 	if errors.Is(err, syscall.ELOOP) {

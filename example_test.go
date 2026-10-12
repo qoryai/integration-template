@@ -142,8 +142,8 @@ func TestAnOwnTokenFileIsRead(t *testing.T) {
 	}
 }
 
-func TestATokenFileOthersMayReadIsRefused(t *testing.T) {
-	for _, perm := range []os.FileMode{0o644, 0o640, 0o604, 0o660, 0o610} {
+func TestATokenFileGroupOrOthersHavePermissionsIsRefused(t *testing.T) {
+	for _, perm := range []os.FileMode{0o644, 0o640, 0o604, 0o660, 0o610, 0o620, 0o601} {
 		_, err := ReadTokenFile(tokenFile(t, token, perm))
 		if err == nil || !strings.Contains(err.Error(), "group or others have permissions on it") || strings.Contains(err.Error(), token) {
 			t.Errorf("%s: %v", perm, err)
