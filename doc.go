@@ -2,7 +2,7 @@
 // acme-example does, as a library. Rename it to the system your integration connects.
 //
 // It plays one role, the gateway's credential adapter
-// (https://github.com/qoryai/forager/tree/main/contracts/forager/v1#credentials): it reads
+// (https://github.com/qoryai/forager/tree/v0.7.0/contracts/forager/v1#credentials): it reads
 // a static API token of the Example API, api.example.com, from a file, and answers with
 // the token and how it is used for the project a run works on, the host, the scheme and
 // the paths. [ParseProject] reads the run's argument, [ReadTokenFile] the token, and
@@ -14,7 +14,7 @@
 // paths are what the gateway enforces whatever the token may do.
 //
 // [Describe] is the integration's description, the integration contract
-// (https://github.com/qoryai/integrations/tree/main/contracts/integration/v1): its name,
+// (https://github.com/qoryai/integrations/tree/v0.3.0/contracts/integration/v1): its name,
 // the settings it takes as a JSON Schema, and the roles it plays. [ReadSettings] reads a
 // settings document against that schema.
 //

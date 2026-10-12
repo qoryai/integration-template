@@ -28,7 +28,7 @@ It contains a working integration, `acme-example`, that:
 On GitHub, click *Use this template*. Name the repository after your program, for
 example `acme-tracker`. Do not use `qory` in the name; the `qory-` prefix is reserved for
 programs Qory publishes
-([TRADEMARKS.md](https://github.com/qoryai/integrations/blob/main/TRADEMARKS.md)).
+([TRADEMARKS.md](https://github.com/qoryai/integrations/blob/v0.3.0/TRADEMARKS.md)).
 
 ## 2. Rename the example
 
@@ -54,7 +54,7 @@ mints or fetches a token for the argument, as
 [qory-github](https://github.com/qoryai/qory-github) does.
 
 Rules every program follows
-([integration contract](https://github.com/qoryai/integrations/tree/main/contracts/integration/v1)):
+([integration contract](https://github.com/qoryai/integrations/tree/v0.3.0/contracts/integration/v1)):
 
 - `describe` prints one JSON document, takes no settings and makes no network call.
 - A role is started as `<program> <role> --settings <json> -- <argument>`. `--` ends the
@@ -66,10 +66,10 @@ Rules every program follows
   it. Refuse the secret's value on the command line; read it from the file.
 
 The credential role's answer is the gateway's credential document
-([§Credentials](https://github.com/qoryai/forager/tree/main/contracts/forager/v1#credentials)):
+([§Credentials](https://github.com/qoryai/forager/tree/v0.7.0/contracts/forager/v1#credentials)):
 the token, optionally when it expires, and the hosts, scheme and paths it applies to.
 
-More: [Writing an integration](https://github.com/qoryai/integrations/blob/main/docs/writing-an-integration.md).
+More: [Writing an integration](https://github.com/qoryai/integrations/blob/v0.3.0/docs/writing-an-integration.md).
 
 ## 4. Test
 
@@ -79,7 +79,7 @@ go test ./...
 ```
 
 The tests run the program and check its output with
-[`conformance`](https://github.com/qoryai/integrations/tree/main/conformance):
+[`conformance`](https://github.com/qoryai/integrations/tree/v0.3.0/conformance):
 
 - `conformance.Description`: `describe` output against the contract's schema.
 - `conformance.Credential`: the credential answer against the gateway's schema.
