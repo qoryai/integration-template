@@ -33,17 +33,18 @@ func ParseProject(arg string) (string, error) {
 	return arg, nil
 }
 
-// maxTokenFile is the most of a token file that is read: a token is a few hundred bytes.
+// maxTokenFile is the most a token file may hold; one byte more is read to tell a larger
+// file apart: a token is a few hundred bytes.
 const maxTokenFile = 64 << 10
 
-// ReadTokenFile reads the API token from a file that only its owner may read. It opens
-// the file once, never through a symbolic link and without waiting on a pipe, and reads
-// what it opened: a file that is not a regular one, that grants group or others any
-// permission, or that belongs to another user than the one the program runs as is refused
-// before it is read, and one larger than a token is refused having read at most one byte
-// more than a token may hold. The token is the file's content without one trailing
-// newline; an empty token, and one with white space or a control character in it, which
-// no header carries, are refused. An error names the file, never its content.
+// ReadTokenFile reads the API token from a file that only its owner has any permission
+// on. It opens the file once, never through a symbolic link and without waiting on a
+// pipe, and reads what it opened: a file that is not a regular one, that grants group or
+// others any permission, or that belongs to another user than the one the program runs as
+// is refused before it is read, and one larger than a token is refused having read at
+// most one byte more than a token may hold. The token is the file's content without one
+// trailing newline; an empty token, and one with white space or a control character in
+// it, which no header carries, are refused. An error names the file, never its content.
 func ReadTokenFile(path string) (string, error) {
 	f, err := os.OpenFile(path, os.O_RDONLY|syscall.O_NOFOLLOW|syscall.O_NONBLOCK, 0)
 	if errors.Is(err, syscall.ELOOP) {
@@ -61,7 +62,7 @@ func ReadTokenFile(path string) (string, error) {
 		return "", fmt.Errorf("the token file %s is not a regular file", path)
 	}
 	if info.Mode().Perm()&0o077 != 0 {
-		return "", fmt.Errorf("the token file %s is %s: others may read it; make it 0600", path, info.Mode().Perm())
+		return "", fmt.Errorf("the token file %s is %s: group or others have permissions on it; make it 0600", path, info.Mode().Perm())
 	}
 	if st, ok := info.Sys().(*syscall.Stat_t); !ok || int(st.Uid) != os.Geteuid() {
 		return "", fmt.Errorf("the token file %s belongs to another user than the one the program runs as", path)

@@ -22,7 +22,7 @@ A flaw in the template that every integration started from it copies:
   on standard output: an error line among them.
 - It accepts the secret `token` on its command line.
 - It reads a token file that is a symbolic link, is not a regular file, belongs to
-  another user, or that group or others may read.
+  another user, or that grants group or others any permission.
 - Its answer claims a path of another project than the argument's, or a host the
   description does not list.
 
