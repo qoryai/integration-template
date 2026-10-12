@@ -9,6 +9,8 @@ which starts over.
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-12
+
 ### Added
 
 - The example integration, `example`, and its program, `acme-example`, built from
@@ -23,17 +25,18 @@ which starts over.
   refused with a message that says to set `token_file`. A token file that grants group or
   others any permission is refused with a message that says so and to make it 0600.
 - The tests, which hand what the program prints to the `conformance` package of
-  `github.com/qoryai/integrations` v0.2.1-0.20261009095202-e39423b387cf: the description,
+  `github.com/qoryai/integrations` v0.3.0: the description,
   the answer, and each failure.
 - `ci.yml` and `release.yml`, which call the workflows of qoryai/integrations: `ci.yml`
-  its `go.yml` at `@e09fe60e553bc459d30a528fe8bfd7cb4cc75fa0`, the checks on every push to
+  its `go.yml` at `@v0.3.0`, the checks on every push to
   `main` and `next` and on every pull request, where a pull request from this repository's
   `next` counts the push run on its commit; and `release.yml` its `release.yml` at
-  `@e39423b387cf80ac3128afb7b13ec1c05ab34754`, on a tag `vX.Y.Z` a release by the rule
+  `@v0.3.0`, on a tag `vX.Y.Z` a release by the rule
   every integration's releases follow.
 - The README, the guide from renaming the template to listing the integration in the
   catalog.
 - The licence, MIT No Attribution (MIT-0): an integration started from the template
   owes it no notice and no credit, and is licensed as its author chooses.
 
-[Unreleased]: https://github.com/qoryai/integration-template/commits/main
+[Unreleased]: https://github.com/qoryai/integration-template/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/qoryai/integration-template/releases/tag/v0.1.0

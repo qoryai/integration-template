@@ -31,8 +31,8 @@ A flaw in the template that every integration started from it copies:
 - A vulnerability in an integration started from the template: report it to that
   integration's repository. When the flaw came from the template, report it here too.
 - The contract, the conformance checks and the shared workflows are
-  [qoryai/integrations'](https://github.com/qoryai/integrations/blob/main/SECURITY.md).
+  [qoryai/integrations'](https://github.com/qoryai/integrations/blob/v0.3.0/SECURITY.md).
 - Forager, and what it does with a credential role's answer, are
-  [Forager's](https://github.com/qoryai/forager/blob/main/SECURITY.md).
+  [Forager's](https://github.com/qoryai/forager/blob/v0.7.0/SECURITY.md).
 
 If you are not sure which side something falls on, write anyway.
