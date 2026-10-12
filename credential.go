@@ -33,7 +33,8 @@ func ParseProject(arg string) (string, error) {
 	return arg, nil
 }
 
-// maxTokenFile is the most of a token file that is read: a token is a few hundred bytes.
+// maxTokenFile is the most a token file may hold; one byte more is read to tell a larger
+// file apart: a token is a few hundred bytes.
 const maxTokenFile = 64 << 10
 
 // ReadTokenFile reads the API token from a file that only its owner may read. It opens
@@ -61,7 +62,7 @@ func ReadTokenFile(path string) (string, error) {
 		return "", fmt.Errorf("the token file %s is not a regular file", path)
 	}
 	if info.Mode().Perm()&0o077 != 0 {
-		return "", fmt.Errorf("the token file %s is %s: others may read it; make it 0600", path, info.Mode().Perm())
+		return "", fmt.Errorf("the token file %s is %s: group or others have permissions on it; make it 0600", path, info.Mode().Perm())
 	}
 	if st, ok := info.Sys().(*syscall.Stat_t); !ok || int(st.Uid) != os.Geteuid() {
 		return "", fmt.Errorf("the token file %s belongs to another user than the one the program runs as", path)
