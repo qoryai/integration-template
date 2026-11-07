@@ -1,4 +1,6 @@
-# Integration template
+# Qory Integration Template
+
+This repository is part of [Qory](https://github.com/qoryai/qory). Its README lists every part and how to install Qory.
 
 A starting point for a Qory integration written in Go. Create a repository from it,
 rename the example, replace its logic, and release.
